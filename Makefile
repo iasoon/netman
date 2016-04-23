@@ -9,7 +9,7 @@ OBJS   := $(SRCS:.c=.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(LINK.cc) $(OBJS) -o $(TARGET)
+	$(LINK.c) $(OBJS) -o $(TARGET)
 
 clean:
 	@echo "Cleaning"
