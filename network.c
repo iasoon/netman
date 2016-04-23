@@ -17,7 +17,7 @@ wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
 	int nbytes;
 
 	strcpy(buffer, command);
-	printf("%s\n", buffer);
+	DEBUG("%s\n", buffer);
 	write(wpa_ctrl->socket, buffer, strlen(buffer));
 
 	/* receive reply */
@@ -25,7 +25,7 @@ wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
 		nbytes = read(wpa_ctrl->socket, buffer, BUFFER_SIZE);
 		/* remove trailing newline */
 		buffer[nbytes-1] = 0;
-		printf("> %s\n", buffer);
+		DEBUG("> %s\n", buffer);
 		if (buffer[0] == '<') {
 			/* skip control messages for now */
 		} else {

@@ -7,16 +7,6 @@
 #include "network.h"
 #include "util.h"
 
-#define eprintf(...) (fprintf(stderr, __VA_ARGS__))
-
-#define DEBUG_MODE 1
-
-#if DEBUG_MODE == 1
-#define DEBUG(...) (printf(__VA_ARGS__))
-#else
-#define DEBUG(...)
-#endif
-
 struct options {
 	char *cfg_path;
 	char *name;
@@ -178,7 +168,7 @@ print_keyvalues(config_t *config)
 {
 	keyvalue_t *tmp = config->opts->kv_pair;
 	while (tmp) {
-		printf("%s - %s\n", tmp->key, tmp->value);
+		DEBUG("%s - %s\n", tmp->key, tmp->value);
 		tmp = tmp->next;
 	}
 }

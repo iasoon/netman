@@ -1,6 +1,17 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#define eprintf(...) (fprintf(stderr, __VA_ARGS__))
+
+#define DEBUG_MODE 1
+
+#if DEBUG_MODE == 1
+#define DEBUG(...) (printf(__VA_ARGS__))
+#else
+#define DEBUG(...)
+#endif
+
+
 struct keyvalue {
 	char *key;
 	char *value;
