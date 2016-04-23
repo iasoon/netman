@@ -1,24 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "network.h"
 #include "util.h"
 
-#define SOCK_PATH *PATH*
-#define SSID *SSID*
-#define PSK *PSK*
+#define SOCK_PATH "/var/run/wpa_supplicant/iface"
 #define BUFFER_SIZE 4096
 
 static int
 wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
 {
 	char buffer[BUFFER_SIZE];
-	int nbytes;
+	int nbytes, res;
 
 	strcpy(buffer, command);
 	DEBUG("%s\n", buffer);
-	write(wpa_ctrl->socket, buffer, strlen(buffer));
+	res = write(wpa_ctrl->socket, buffer, strlen(buffer));
+	if (res < 0) return -1;
 
 	/* receive reply */
 	for (;;) {
@@ -51,7 +52,6 @@ void
 wpa_ctrl_register(wpa_ctrl_t *wpa_ctrl, network_t *network)
 {
 	char buffer[BUFFER_SIZE];
-	keyvalue_t *kv;
 	wpa_ctrl_request(wpa_ctrl, "ADD_NETWORK", buffer);
 	set_str(&network->id, buffer);
 	wpa_ctrl_configure_network(wpa_ctrl, network);
@@ -74,7 +74,7 @@ wpa_ctrl_connect(wpa_ctrl_t *wpa_ctrl, char* socket_addr)
 	if (wpa_ctrl->socket < 0) return -1;
 
 	wpa_ctrl->local.sun_family = AF_UNIX;
-	snprintf(wpa_ctrl->local.sun_path, sizeof(struct sockaddr_un),
+	snprintf(wpa_ctrl->local.sun_path, sizeof(wpa_ctrl->local.sun_path),
 			"/tmp/netman-%d", getpid());
 	ret = bind(wpa_ctrl->socket, (struct sockaddr*) &wpa_ctrl->local,
 			sizeof(struct sockaddr_un));
@@ -96,16 +96,12 @@ wpa_ctrl_close(wpa_ctrl_t *wpa_ctrl)
 }
 
 void
-main()
-{
+connect_to_network(network_t *network){
 	wpa_ctrl_t wpa_ctrl;
-	network_t network;
-	network.options = mk_keyvalue("ssid", SSID);
-	network.options->next = mk_keyvalue("psk", PSK);
 
 	wpa_ctrl_connect(&wpa_ctrl, SOCK_PATH);
-	wpa_ctrl_register(&wpa_ctrl, &network);
-	wpa_ctrl_enable(&wpa_ctrl, &network);
+	wpa_ctrl_register(&wpa_ctrl, network);
+	wpa_ctrl_enable(&wpa_ctrl, network);
 
 	wpa_ctrl_close(&wpa_ctrl);
 }

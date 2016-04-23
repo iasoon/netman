@@ -44,13 +44,16 @@ static config_t default_conf = {
 	.opts = NULL
 };
 
-static void 
+static void
 netman_connect(options_t *options)
 {
-	DEBUG("PSK: %s\n", options->name);
+	network_t network;
+	network.name = options->name;
+	network.options = options->kv_pair;
+	connect_to_network(&network);
 }
 
-static void 
+static void
 netman_reconnect(options_t *options)
 {
 	DEBUG("SSID: %s\n", options->name);

@@ -5,7 +5,7 @@
 #include <sys/un.h>
 
 struct network {
-	char *alias;
+	char *name;
 	char *id;
 	struct keyvalue *options;
 };
@@ -18,5 +18,7 @@ struct wpa_ctrl {
 
 typedef struct network network_t;
 typedef struct wpa_ctrl wpa_ctrl_t;
+
+void connect_to_network(network_t *network);
 
 #endif
