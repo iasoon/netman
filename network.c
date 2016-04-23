@@ -1,78 +1,111 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <string.h>
 
 #include "network.h"
 #include "util.h"
 
-#define SOCK_PATH *path*
-#define SSID *ssid*
-#define PSK *psk*
+#define SOCK_PATH *PATH*
+#define SSID *SSID*
+#define PSK *PSK*
 #define BUFFER_SIZE 4096
 
-int
-wpa_supplicant_request(int socket_fd, char* command, char* reply) {
-	int nbytes;
+static int
+wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
+{
 	char buffer[BUFFER_SIZE];
+	int nbytes;
+
 	strcpy(buffer, command);
-	write(socket_fd, buffer, strlen(buffer));
-	nbytes = read(socket_fd, buffer, BUFFER_SIZE);
-	/* remove trailing newline */
-	buffer[nbytes-1] = 0;
-	printf("GOT MESSAGE: %s\n", buffer);
-	strcpy(reply, buffer);
-	return nbytes;
+	printf("%s\n", buffer);
+	write(wpa_ctrl->socket, buffer, strlen(buffer));
+
+	/* receive reply */
+	for (;;) {
+		nbytes = read(wpa_ctrl->socket, buffer, BUFFER_SIZE);
+		/* remove trailing newline */
+		buffer[nbytes-1] = 0;
+		printf("> %s\n", buffer);
+		if (buffer[0] == '<') {
+			/* skip control messages for now */
+		} else {
+			strcpy(reply, buffer);
+			return nbytes;
+		}
+	}
 }
 
 void
-connect_to_network(int socket_fd, network_t *network) {
+wpa_ctrl_configure_network(wpa_ctrl_t *wpa_ctrl, network_t *network)
+{
 	char buffer[BUFFER_SIZE];
 	keyvalue_t *kv;
-	wpa_supplicant_request(socket_fd, "ADD_NETWORK", buffer);
-	set_str(&network->id, buffer);
 	for (kv = network->options; kv; kv = kv->next) {
-		snprintf(buffer, BUFFER_SIZE, "SET_NETWORK %s %s \"%s\"",
+		snprintf(buffer, BUFFER_SIZE, "SET_NETWORK %s %s %s",
 				network->id, kv->key, kv->value);
-		printf("WRITING %s\n", buffer);
-		wpa_supplicant_request(socket_fd, buffer, buffer);
+		wpa_ctrl_request(wpa_ctrl, buffer, buffer);
 	}
-	snprintf(buffer, BUFFER_SIZE, "ENABLE_NETWORK %s", network->id);
-	wpa_supplicant_request(socket_fd, buffer, buffer);
 }
 
 void
-supplicant_test() {
-	int socket_fd, nbytes;
-	char reply[BUFFER_SIZE];
+wpa_ctrl_register(wpa_ctrl_t *wpa_ctrl, network_t *network)
+{
+	char buffer[BUFFER_SIZE];
+	keyvalue_t *kv;
+	wpa_ctrl_request(wpa_ctrl, "ADD_NETWORK", buffer);
+	set_str(&network->id, buffer);
+	wpa_ctrl_configure_network(wpa_ctrl, network);
+}
 
+void
+wpa_ctrl_enable(wpa_ctrl_t *wpa_ctrl, network_t *network)
+{
+	char buffer[BUFFER_SIZE];
+	snprintf(buffer, BUFFER_SIZE, "ENABLE_NETWORK %s", network->id);
+	wpa_ctrl_request(wpa_ctrl, buffer, buffer);
+}
+
+int
+wpa_ctrl_connect(wpa_ctrl_t *wpa_ctrl, char* socket_addr)
+{
+	int ret;
+
+	wpa_ctrl->socket = socket(AF_UNIX, SOCK_DGRAM, 0);
+	if (wpa_ctrl->socket < 0) return -1;
+
+	wpa_ctrl->local.sun_family = AF_UNIX;
+	snprintf(wpa_ctrl->local.sun_path, sizeof(struct sockaddr_un),
+			"/tmp/netman-%d", getpid());
+	ret = bind(wpa_ctrl->socket, (struct sockaddr*) &wpa_ctrl->local,
+			sizeof(struct sockaddr_un));
+	if (ret < 0) return -1;
+
+	wpa_ctrl->remote.sun_family = AF_UNIX;
+	strcpy(wpa_ctrl->remote.sun_path, socket_addr);
+	ret = connect(wpa_ctrl->socket, (struct sockaddr*) &wpa_ctrl->remote,
+			sizeof(struct sockaddr_un));
+	if (ret < 0) return -1;
+	return 0;
+}
+
+void
+wpa_ctrl_close(wpa_ctrl_t *wpa_ctrl)
+{
+	unlink(wpa_ctrl->local.sun_path);
+	close(wpa_ctrl->socket);
+}
+
+void
+main()
+{
+	wpa_ctrl_t wpa_ctrl;
 	network_t network;
-
-	struct sockaddr_un addr;
-	struct sockaddr_un local;
-	memset(&addr, 0, sizeof(struct sockaddr_un));
-	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, SOCK_PATH);
-	local.sun_family = AF_UNIX;
-	snprintf(local.sun_path, sizeof(struct sockaddr_un), "/tmp/netman-%d", getpid());
-
-	socket_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
-	bind(socket_fd, (struct sockaddr*) &local, sizeof(local));
-	connect(socket_fd, (struct sockaddr*) &addr, sizeof(addr));
-
 	network.options = mk_keyvalue("ssid", SSID);
 	network.options->next = mk_keyvalue("psk", PSK);
 
-	connect_to_network(socket_fd, &network);
+	wpa_ctrl_connect(&wpa_ctrl, SOCK_PATH);
+	wpa_ctrl_register(&wpa_ctrl, &network);
+	wpa_ctrl_enable(&wpa_ctrl, &network);
 
-	close(socket_fd);
+	wpa_ctrl_close(&wpa_ctrl);
 }
-
-void
-main() {
-	supplicant_test();
-}
-
-/* void things(){ */
-/* } */
