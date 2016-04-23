@@ -1,11 +1,11 @@
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
 #include <unistd.h>
 
-#include "network.h"
 #include "util.h"
+#include "wpa_ctrl.h"
 
 #define SOCK_PATH "/var/run/wpa_supplicant/iface"
 #define BUFFER_SIZE 4096
@@ -37,7 +37,7 @@ wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
 }
 
 void
-wpa_ctrl_configure_network(wpa_ctrl_t *wpa_ctrl, network_t *network)
+wpa_ctrl_configure_network(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 {
 	char buffer[BUFFER_SIZE];
 	keyvalue_t *kv;
@@ -49,7 +49,7 @@ wpa_ctrl_configure_network(wpa_ctrl_t *wpa_ctrl, network_t *network)
 }
 
 void
-wpa_ctrl_register(wpa_ctrl_t *wpa_ctrl, network_t *network)
+wpa_ctrl_register(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 {
 	char buffer[BUFFER_SIZE];
 	wpa_ctrl_request(wpa_ctrl, "ADD_NETWORK", buffer);
@@ -58,7 +58,7 @@ wpa_ctrl_register(wpa_ctrl_t *wpa_ctrl, network_t *network)
 }
 
 void
-wpa_ctrl_enable(wpa_ctrl_t *wpa_ctrl, network_t *network)
+wpa_ctrl_enable(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 {
 	char buffer[BUFFER_SIZE];
 	snprintf(buffer, BUFFER_SIZE, "ENABLE_NETWORK %s", network->id);
@@ -96,7 +96,7 @@ wpa_ctrl_close(wpa_ctrl_t *wpa_ctrl)
 }
 
 void
-connect_to_network(network_t *network){
+connect_to_network(wpa_network_t *network){
 	wpa_ctrl_t wpa_ctrl;
 
 	wpa_ctrl_connect(&wpa_ctrl, SOCK_PATH);

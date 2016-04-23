@@ -6,7 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "network.h"
+#include "wpa_ctrl.h"
 #include "util.h"
 
 struct options {
@@ -47,7 +47,7 @@ static config_t default_conf = {
 static void
 netman_connect(options_t *options)
 {
-	network_t network;
+	wpa_network_t network;
 	network.name = options->name;
 	network.options = options->kv_pair;
 	connect_to_network(&network);
