@@ -1,6 +1,8 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -181,6 +183,7 @@ main(int argc, char *argv[])
 	config.opts = &opts;
 	arg_parse(argc, argv, &config);
 	print_keyvalues(&config);
+	config.cmd(config.opts);
 
 	return 0;
 }
