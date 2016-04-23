@@ -39,7 +39,7 @@ set_str_quote(char **dest, const char *src)
 	
 	if (*dest == NULL) {
 		if ((*dest = malloc(src_len+2)) == NULL) exit(1);
-		dest_len = src_len+2;
+		dest_len = src_len+3;
 	} else {
 		dest_len = strlen(*dest);
 	}	
@@ -52,7 +52,9 @@ set_str_quote(char **dest, const char *src)
 		**dest = '\"';
 		*dest = (*dest) + src_len+1;
 		**dest = '\"';
-		*dest = (*dest) - src_len-1;
+		(*dest)++;
+		**dest = '\0';
+		*dest = (*dest) - src_len-2;
 	}
 }
 
