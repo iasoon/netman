@@ -12,15 +12,6 @@
 #define PSK *psk*
 #define BUFFER_SIZE 4096
 
-keyvalue_t *
-mk_keyvalue(char* key, char* value){
-	keyvalue_t *kv = malloc(sizeof(keyvalue_t));
-	set_str(&kv->key, key);
-	set_str(&kv->value, value);
-	kv->next = 0;
-	return kv;
-}
-
 int
 wpa_supplicant_request(int socket_fd, char* command, char* reply) {
 	int nbytes;

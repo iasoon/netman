@@ -4,6 +4,9 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "network.h"
+#include "util.h"
+
 #define eprintf(...) (fprintf(stderr, __VA_ARGS__))
 
 #define DEBUG_MODE 1
@@ -15,12 +18,10 @@
 #endif
 
 struct options {
-	char ssid[32];	
-	char bssid[32];
-	char *psk;
 	char *cfg_path;
 	char *name;
 	char *interface;
+	keyvalue_t *kv_pair;
 	int no_save;
 	int verbose;
 	int quiet;
@@ -37,14 +38,13 @@ struct netman_config {
 typedef struct netman_config config_t;
 
 static options_t default_opts = { 
-	.ssid     = "",
-	.bssid    = "",
-	.psk      = NULL,
-	.cfg_path = NULL,
-	.name     = NULL,
-	.no_save  = 0,
-	.verbose  = 0,
-	.quiet    = 0
+	.cfg_path  = NULL,
+	.name      = NULL,
+	.interface = NULL,
+	.kv_pair   = NULL,
+	.no_save   = 0,
+	.verbose   = 0,
+	.quiet     = 0
 };
 
 static config_t default_conf = {
@@ -55,13 +55,13 @@ static config_t default_conf = {
 static void 
 netman_connect(options_t *options)
 {
-	DEBUG("PSK: %s\n", options->psk);
+	DEBUG("PSK: %s\n", options->name);
 }
 
 static void 
 netman_reconnect(options_t *options)
 {
-	DEBUG("SSID: %s\n", options->ssid);
+	DEBUG("SSID: %s\n", options->name);
 }
 
 static void 
@@ -73,7 +73,13 @@ netman_blacklist(options_t *options)
 static void
 netman_scan(options_t *options)
 {
-	DEBUG("Scan: %s\n", options->interface);
+	DEBUG("Scan: %s\n", options->name); 
+}
+
+static void
+netman_scan_networks(options_t *options)
+{
+	DEBUG("Scan networks: %s\n", options->name); 
 }
 
 static int
@@ -81,21 +87,25 @@ arg_parse(int argc, char *argv[], config_t *config)
 {
 	int ret_code;
 	int opt_idx = 0;
+	char *ssid_str = NULL;
+	char *psk_str = NULL;
 
 	struct option long_options[] = {
-		{ "no-save",    no_argument,       &config->opts->no_save,  0  },
-		{ "verbose",    no_argument,       0,                      'v' },
-		{ "quiet",      no_argument,       0,                      'q' },
-		{ "connect",    required_argument, 0,                      'c' },
-		{ "blacklist",  required_argument, 0,                      'b' },
-		{ "reconnect",  no_argument,       0,                      'r' },
-		{ "passphrase", required_argument, 0,                      'p' },
-		{ "scan",       required_argument, 0,                      's' },
+		{ "no-save",       no_argument,       &config->opts->no_save,  0  },
+		{ "verbose",       no_argument,       0,                      'v' },
+		{ "quiet",         no_argument,       0,                      'q' },
+		{ "connect",       required_argument, 0,                      'c' },
+		{ "blacklist",     required_argument, 0,                      'b' },
+		{ "reconnect",     no_argument,       0,                      'r' },
+		{ "passphrase",    required_argument, 0,                      'p' },
+		{ "scan",          no_argument,       0,                      's' },
+		{ "scan-networks", no_argument,       0,                      'S' },
+		{ "ssid",          required_argument, 0,                      'n' },
 	};
 
 	opterr = 0;
 
-	while ((ret_code = getopt_long(argc, argv, "vqc:b:rp:s:", 
+	while ((ret_code = getopt_long(argc, argv, "vqc:b:rp:sSn:", 
 					long_options, &opt_idx)) != -1) {
 		DEBUG("ret_code: %d\n", ret_code);
 		switch (ret_code) {
@@ -132,22 +142,45 @@ arg_parse(int argc, char *argv[], config_t *config)
 					DEBUG("Reconnect\n");
 					config->cmd = netman_reconnect;
 				}
-			case 'p':
-				set_str(&config->opts->psk, optarg);
-				DEBUG("PSK %s\n", config->opts->psk);
+			case 'p': /* Keyvalue */
+				set_str_quote(&psk_str, optarg);
+				config->opts->kv_pair = mk_keyvalue("psk", psk_str, config->opts->kv_pair);
+				free(psk_str);
+				DEBUG("Set the PSK\n");
 				break;
 			case 's':
 				if (config->cmd == NULL) {
 					config->cmd = netman_scan;
-					set_str(&config->opts->interface, optarg);
-					DEBUG("Scan with interface: %s\n", config->opts->interface);
+					DEBUG("Scan\n");
 				}
+				break;
+			case 'S':
+				if (config->cmd == NULL) {
+					config->cmd = netman_scan_networks;
+					DEBUG("Scan networks\n");
+				}
+				break;
+			case 'n': /* Keyvalue */
+				set_str_quote(&ssid_str, optarg);
+				config->opts->kv_pair = mk_keyvalue("ssid", ssid_str, config->opts->kv_pair);
+				free(ssid_str);
+				DEBUG("Set the SSID\n");
 				break;
 			default:
 				eprintf("Sumting wong\n");
 		}
 	}
 	return 0;
+}
+
+void
+print_keyvalues(config_t *config)
+{
+	keyvalue_t *tmp = config->opts->kv_pair;
+	while (tmp) {
+		printf("%s - %s\n", tmp->key, tmp->value);
+		tmp = tmp->next;
+	}
 }
 
 int
@@ -157,5 +190,7 @@ main(int argc, char *argv[])
 	options_t opts = default_opts;
 	config.opts = &opts;
 	arg_parse(argc, argv, &config);
+	print_keyvalues(&config);
+
 	return 0;
 }

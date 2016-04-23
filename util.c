@@ -55,3 +55,13 @@ set_str_quote(char **dest, const char *src)
 		*dest = (*dest) - src_len-1;
 	}
 }
+
+keyvalue_t *
+mk_keyvalue(char *key, char *value, keyvalue_t *next)
+{
+	keyvalue_t *kv = malloc(sizeof(keyvalue_t));
+	set_str(&kv->key, key);
+	set_str(&kv->value, value);
+	kv->next = next;
+	return kv;
+}
