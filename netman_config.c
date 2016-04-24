@@ -9,7 +9,7 @@
 #define STACK_SIZE 32
 
 static inline int
-read(char* dest, FILE *file)
+read(char *dest, FILE *file)
 {
 	return (*dest = fgetc(file)) != EOF;
 }
@@ -18,7 +18,7 @@ static inline size_t
 read_until(char *dest, char *delims, FILE *file)
 {
 	char* d, *c = dest;
-	for (;;){
+	for (;;) {
 		for (d = delims; *d != '\0'; d++)
 			if (*c == *d) return c - dest;
 		if (!read(c+1, file)) return c - dest;
@@ -30,7 +30,7 @@ static inline void
 skip(char *c, char *delims, FILE *file)
 {
 	char *d;
-	for (;;){
+	for (;;) {
 		for (d = delims; *d != '\0' && *c != *d; d++);
 		if (*d == '\0') return;
 		if (!read(c, file)) return;
@@ -52,7 +52,7 @@ extract_token(char *buffer, int num)
 
 
 keyvalue_t *
-read_keyvalue(FILE* file)
+read_keyvalue(FILE *file)
 {
 	char buffer[BUFFER_SIZE];
 	size_t num;
@@ -97,6 +97,36 @@ read_keyvalue(FILE* file)
 				kv->type = VALUE_STR;
 				num = read_until(buffer, "\n", file);
 				kv->value.str = extract_token(buffer, num);
+			}
+		}
+	}
+	return root;
+}
+
+
+void
+write_keyvalue(FILE *file, keyvalue_t *root){
+	keyvalue_t *pos[STACK_SIZE] = {0};
+	int i, depth = 0;
+	pos[0] = root;
+	while (pos[0]) {
+		if (!pos[depth]) {
+			pos[depth] = 0;
+			depth--;
+			pos[depth] = pos[depth]->next;
+			for (i = 0; i < depth; i++)
+				fprintf(file, "  ");
+			fprintf(file, "}\n");
+		} else {
+			for (i = 0; i < depth; i++)
+				fprintf(file, "  ");
+			if (pos[depth]->type == VALUE_CHILD) {
+				fprintf(file, "%s = {\n", pos[depth]->key);
+				pos[depth+1] = pos [depth]->value.child;
+				depth++;
+			} else {
+				fprintf(file, "%s = %s\n", pos[depth]->key, pos[depth]->value.str);
+				pos[depth] = pos[depth]->next;
 			}
 		}
 	}
