@@ -56,9 +56,9 @@ read_keyvalue(FILE* file)
 {
 	char buffer[BUFFER_SIZE];
 	size_t num;
-	keyvalue_t *kv, *root;
+	keyvalue_t *kv, *root = 0;
 
-	keyvalue_t *predecessors[STACK_SIZE];
+	keyvalue_t *predecessors[STACK_SIZE] = {0};
 	int depth = 0;
 
 	while (read(buffer, file)) {
@@ -76,8 +76,8 @@ read_keyvalue(FILE* file)
 				predecessors[depth-1]->value.child = kv;
 			else
 				root = kv;
-
 			predecessors[depth] = kv;
+
 			kv->next = 0;
 
 			/* read key */
