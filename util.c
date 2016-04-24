@@ -6,84 +6,52 @@ set_str(char **dest, const char *src)
 	int src_len;
 	int dest_len;
 
+	/* Do not copy if the src string is NULL */
 	if (src == NULL) return;
 	src_len = strlen(src);
 
+	/* If the dest string is null, allocate src_len + 1 bytes for it
+	 * in case of a missing '\0' terminator in the src string
+	 */
 	if (*dest == NULL)  {
-		if ((*dest = malloc(src_len)) == NULL) exit(1);	
+		if ((*dest = malloc(src_len+1)) == NULL) exit(1);	
 		dest_len = src_len;
 	} else {
 		dest_len = strlen(*dest);
 	}
 
+	/* Only copy if there is enough room */
 	if (src_len <= dest_len) {
 		if (strcpy(*dest, src) == NULL) { exit(1); }
 	}
 }
 
-/* FIXME: Placeholder that just works, REFACTOR */
 void
 set_str_quote(char **dest, const char *src)
 {
 	int src_len;
 	int dest_len;
+	char *temp = NULL;
 	
+	/* Do not copy if the src string is NULL */
 	if (src == NULL) return;
 	src_len = strlen(src);
 
-	
-	if (*dest == NULL) {
-		if ((*dest = malloc(src_len+2)) == NULL) exit(1);
-		dest_len = src_len+3;
-	} else {
-		dest_len = strlen(*dest);
-	}	
+	/* src + " " + null terminator */
+	dest_len = src_len + 3;
 
-	/* Dragons be here */
-	if (src_len+2 <= dest_len) {
-		(*dest)++;
-		if (strcpy(*dest, src) == NULL) { exit(1); }
-		(*dest)--;
-		**dest = '\"';
-		*dest = (*dest) + src_len+1;
-		**dest = '\"';
-		(*dest)++;
-		**dest = '\0';
-		*dest = (*dest) - src_len-2;
-	}
-}
-
-/* FIXME: Placeholder that just works, REFACTOR */
-void set_stripped(char **dest, char *begin, char *end)
-{
-	int size = 0;
-	int i = 0;
-
-	while (*begin == ' ' || *begin == '\t')
-		begin++;
-
-	while (*end == ' ' || *end == '\t' || *end == '\n')
-		end--;
-	
-	size = end - begin;
-
-	if (*dest == NULL) {
-		if ((*dest = malloc(size)) == NULL) exit(1);
-	} else {
-		size = strlen(*dest);
+	/* No preallocated buffers allowed, function gets too dirty */
+	if (*dest != NULL) {
+		free(*dest);
 	}
 
-	if (end-begin <= size) {
-		while (begin != end) {
-			**dest = *begin;
-			(*dest)++;
-			begin++;
-		}
-		**dest = *end;
-		for (i = 0; i < size; i++) {
-			(*dest)--;
-		}
-	}
+	if ((temp = malloc(dest_len)) == NULL)
+		exit(1);
+	strcpy(temp, "\"");
+	strcat(temp, src);
+	strcat(temp, "\"");
+
+	*dest = temp;
 }
 
 keyvalue_t *

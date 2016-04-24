@@ -31,6 +31,8 @@ struct keyvalue {
 
 typedef struct keyvalue keyvalue_t;
 
+size_t strlcpy(char *dest, const char *src, size_t size);
+size_t strlcat(char *dest, const char *src, size_t size);
 void set_str(char **dest, const char *src);
 void set_str_quote(char **dest, const char *str);
 void set_stripped(char **dest, char *begin, char *end);
