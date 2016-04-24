@@ -36,19 +36,19 @@ wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
 	}
 }
 
-void
+static void
 wpa_ctrl_configure_network(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 {
 	char buffer[BUFFER_SIZE];
 	keyvalue_t *kv;
 	for (kv = network->options; kv; kv = kv->next) {
 		snprintf(buffer, BUFFER_SIZE, "SET_NETWORK %s %s %s",
-				network->id, kv->key, kv->value);
+				network->id, kv->key, kv->value.str);
 		wpa_ctrl_request(wpa_ctrl, buffer, buffer);
 	}
 }
 
-void
+static void
 wpa_ctrl_register(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 {
 	char buffer[BUFFER_SIZE];
@@ -57,7 +57,7 @@ wpa_ctrl_register(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 	wpa_ctrl_configure_network(wpa_ctrl, network);
 }
 
-void
+static void
 wpa_ctrl_enable(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 {
 	char buffer[BUFFER_SIZE];
@@ -65,7 +65,7 @@ wpa_ctrl_enable(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 	wpa_ctrl_request(wpa_ctrl, buffer, buffer);
 }
 
-int
+static int
 wpa_ctrl_connect(wpa_ctrl_t *wpa_ctrl, char* socket_addr)
 {
 	int ret;
@@ -88,7 +88,7 @@ wpa_ctrl_connect(wpa_ctrl_t *wpa_ctrl, char* socket_addr)
 	return 0;
 }
 
-void
+static void
 wpa_ctrl_close(wpa_ctrl_t *wpa_ctrl)
 {
 	unlink(wpa_ctrl->local.sun_path);
@@ -96,12 +96,25 @@ wpa_ctrl_close(wpa_ctrl_t *wpa_ctrl)
 }
 
 void
-connect_to_network(wpa_network_t *network){
+connect_to_network(wpa_network_t *network)
+{
 	wpa_ctrl_t wpa_ctrl;
 
 	wpa_ctrl_connect(&wpa_ctrl, SOCK_PATH);
 	wpa_ctrl_register(&wpa_ctrl, network);
 	wpa_ctrl_enable(&wpa_ctrl, network);
+
+	wpa_ctrl_close(&wpa_ctrl);
+}
+
+void
+reconnect_to_network()
+{
+	char reply[BUFFER_SIZE];
+	wpa_ctrl_t wpa_ctrl;
+
+	wpa_ctrl_connect(&wpa_ctrl, SOCK_PATH);
+	wpa_ctrl_request(&wpa_ctrl, "REASSOCIATE", reply);
 
 	wpa_ctrl_close(&wpa_ctrl);
 }

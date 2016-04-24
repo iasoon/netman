@@ -1,33 +1,14 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <string.h>
 #include <unistd.h>
 
-#include "wpa_ctrl.h"
+#include "network.h"
 #include "util.h"
-
-struct options {
-	char *cfg_path;
-	char *name;
-	char *interface;
-	keyvalue_t *kv_pair;
-	int no_save;
-	int verbose;
-	int quiet;
-};
-
-typedef struct options options_t;
-typedef void (*command_t)(options_t *);
-
-struct netman_config {
-	command_t cmd;
-	options_t *opts;
-};
-
-typedef struct netman_config config_t;
+#include "wpa_ctrl.h"
 
 static options_t default_opts = { 
 	.cfg_path  = NULL,
@@ -43,39 +24,6 @@ static config_t default_conf = {
 	.cmd  = NULL,
 	.opts = NULL
 };
-
-static void
-netman_connect(options_t *options)
-{
-	wpa_network_t network;
-	network.name = options->name;
-	network.options = options->kv_pair;
-	connect_to_network(&network);
-}
-
-static void
-netman_reconnect(options_t *options)
-{
-	DEBUG("SSID: %s\n", options->name);
-}
-
-static void 
-netman_blacklist(options_t *options)
-{
-	DEBUG("Name: %s\n", options->name);
-}
-
-static void
-netman_scan(options_t *options)
-{
-	DEBUG("Scan: %s\n", options->name); 
-}
-
-static void
-netman_scan_networks(options_t *options)
-{
-	DEBUG("Scan networks: %s\n", options->name); 
-}
 
 static int
 arg_parse(int argc, char *argv[], config_t *config)
@@ -137,9 +85,10 @@ arg_parse(int argc, char *argv[], config_t *config)
 					DEBUG("Reconnect\n");
 					config->cmd = netman_reconnect;
 				}
+				break;
 			case 'p': /* Keyvalue */
 				set_str_quote(&psk_str, optarg);
-				config->opts->kv_pair = mk_keyvalue("psk", psk_str, config->opts->kv_pair);
+				config->opts->kv_pair = mk_keyvalue("psk", psk_str, config->opts->kv_pair, VALUE_STR);
 				free(psk_str);
 				DEBUG("Set the PSK\n");
 				break;
@@ -157,7 +106,7 @@ arg_parse(int argc, char *argv[], config_t *config)
 				break;
 			case 'n': /* Keyvalue */
 				set_str_quote(&ssid_str, optarg);
-				config->opts->kv_pair = mk_keyvalue("ssid", ssid_str, config->opts->kv_pair);
+				config->opts->kv_pair = mk_keyvalue("ssid", ssid_str, config->opts->kv_pair, VALUE_STR);
 				free(ssid_str);
 				DEBUG("Set the SSID\n");
 				break;
@@ -173,7 +122,7 @@ print_keyvalues(config_t *config)
 {
 	keyvalue_t *tmp = config->opts->kv_pair;
 	while (tmp) {
-		DEBUG("%s - %s\n", tmp->key, tmp->value);
+		DEBUG("%s - %s\n", tmp->key, tmp->value.str);
 		tmp = tmp->next;
 	}
 }
@@ -187,6 +136,15 @@ main(int argc, char *argv[])
 	arg_parse(argc, argv, &config);
 	print_keyvalues(&config);
 	config.cmd(config.opts);
+
+	char *test_str = "   hello there	   \n";
+	char *result = NULL;
+
+	int test_str_len = strlen(test_str);
+
+	set_stripped(&result, test_str, test_str+test_str_len-1);
+	DEBUG("%s", result);
+	free(result);
 
 	return 0;
 }

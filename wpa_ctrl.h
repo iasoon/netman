@@ -4,6 +4,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include "util.h"
+
 struct wpa_network {
 	char *name;
 	char *id;
@@ -20,5 +22,6 @@ typedef struct wpa_network wpa_network_t;
 typedef struct wpa_ctrl wpa_ctrl_t;
 
 void connect_to_network(wpa_network_t *network);
+void reconnect_to_network();
 
 #endif
