@@ -76,7 +76,6 @@ arg_parse(int argc, char *argv[], config_t *config)
 			case 'b':
 				if (config->cmd == NULL) {
 					config->cmd = netman_blacklist;
-					DEBUG("Alo\n");
 					set_str(&config->opts->name, optarg);
 					DEBUG("Blacklist %s\n", config->opts->name);
 				}
@@ -125,7 +124,7 @@ main(int argc, char *argv[])
 	options_t opts = default_opts;
 	config.opts = &opts;
 	arg_parse(argc, argv, &config);
-	config.cmd(config.opts);
+//	config.cmd(config.opts);
 
 	return 0;
 }

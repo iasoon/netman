@@ -4,25 +4,23 @@ void
 set_str(char **dest, const char *src)
 {
 	int src_len;
-	int dest_len;
 
 	/* Do not copy if the src string is NULL */
 	if (src == NULL) return;
 	src_len = strlen(src);
 
-	/* If the dest string is null, allocate src_len + 1 bytes for it
-	 * in case of a missing '\0' terminator in the src string
-	 */
-	if (*dest == NULL)  {
-		if ((*dest = malloc(src_len+1)) == NULL) exit(1);	
-		dest_len = src_len;
-	} else {
-		dest_len = strlen(*dest);
-	}
+	/* Disallow preallocated buffers */
+	if (*dest != NULL) 
+		free(*dest);
+	
+	/* In case of needed null termination */
+	if ((*dest = malloc(src_len+1)) == NULL) exit(1);	
 
-	/* Only copy if there is enough room */
-	if (src_len <= dest_len) {
-		if (strcpy(*dest, src) == NULL) { exit(1); }
+	if (strcpy(*dest, src) == NULL) {
+		DEBUG("strcpy - set_str NULL\n");
+		/* You get NULL */
+		free(*dest);
+		*dest = NULL;
 	}
 }
 
@@ -47,9 +45,30 @@ set_str_quote(char **dest, const char *src)
 
 	if ((temp = malloc(dest_len)) == NULL)
 		exit(1);
-	strcpy(temp, "\"");
-	strcat(temp, src);
-	strcat(temp, "\"");
+
+	if (strcpy(temp, "\"") == NULL) {
+		DEBUG("strcpy - set_str_quote NULL\n");
+		/* You get NULL */
+		free(temp);
+		temp = NULL;
+		return;
+	}
+
+	if (strcat(temp, src) == NULL) {
+		DEBUG("strcat - set_str_quote NULL\n");
+		/* You get NULL */
+		free(temp);
+		temp = NULL;
+		return;	
+	}
+
+	if (strcat(temp, "\"") == NULL) {
+		DEBUG("strcat - set_str_quote NULL\n");
+		/* You get NULL */
+		free(temp);
+		temp = NULL; 
+		return;
+	}
 
 	*dest = temp;
 }
