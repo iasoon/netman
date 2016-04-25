@@ -126,5 +126,6 @@ main(int argc, char *argv[])
 	arg_parse(argc, argv, &config);
 //	config.cmd(config.opts);
 
+	free_kv(&config.opts->kv_pair);
 	return 0;
 }

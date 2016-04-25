@@ -31,12 +31,14 @@ struct keyvalue {
 
 typedef struct keyvalue keyvalue_t;
 
+char **separate_str(char **str, const char *delim, int *sz);
 size_t strlcpy(char *dest, const char *src, size_t size);
 size_t strlcat(char *dest, const char *src, size_t size);
 void set_str(char **dest, const char *src);
 void set_str_quote(char **dest, const char *str);
 void set_stripped(char **dest, char *begin, char *end);
 keyvalue_t *mk_keyvalue(char *key, void *value, keyvalue_t *next, uint8_t type);
-union _vc get_element(char *longkey, keyvalue_t *root);
+union _vc get_element(const char *longkey, keyvalue_t *root);
+void free_kv(keyvalue_t **root);
 
 #endif

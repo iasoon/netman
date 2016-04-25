@@ -92,3 +92,29 @@ mk_keyvalue(char *key, void *ptr, keyvalue_t *next, uint8_t type)
 	return kv;
 }
 
+union _vc
+get_element(const char *key, keyvalue_t *root)
+{
+	while (root) {
+		if (strcmp(root->key, key) == 0)
+			return root->value;
+
+		root = root->next;
+	}	
+
+	static union _vc null = {
+		.str = NULL
+	};
+
+	return null;
+}
+
+void
+free_kv(keyvalue_t **root)
+{
+	if ((*root)->key) free((*root)->key);
+	if ((*root)->type == VALUE_STR) free((*root)->value.str);
+	else free_kv(&(*root)->value.child);
+	if ((*root)->next) free_kv(&(*root)->next);
+	free(*root);
+}
