@@ -11,6 +11,10 @@
 #include "util.h"
 #include "wpa_ctrl.h"
 
+static if_ctrl_t default_if_ctrl = {
+	.socket = -1,
+};
+
 static options_t default_opts = { 
 	.cfg_path  = NULL,
 	.name      = NULL,
@@ -121,21 +125,16 @@ arg_parse(int argc, char *argv[], config_t *config)
 int
 main(int argc, char *argv[])
 {
+	if_ctrl_t if_ctrl = default_if_ctrl;
 	config_t config = default_conf;
 	options_t opts = default_opts;
 	config.opts = &opts;
+	strcpy(if_ctrl.if_req.ifr_name, "eth0");
+	if_ctrl_connect_socket(&if_ctrl);
 	arg_parse(argc, argv, &config);
 //	config.cmd(config.opts);
-	if_ctrl_t if_ctrl;
-	char protocol[IFNAMSIZ];
-	if_ctrl_populate_ifaddrs(&if_ctrl);
-
-	if_ctrl_print_addrs(&if_ctrl);
-
-	char *def_wireless = if_ctrl_get_default_wireless(&if_ctrl, protocol);
-	char *def_wired = if_ctrl_get_default_wired(&if_ctrl);
-	printf("wireless %s with protocol: %s\n", def_wireless, protocol);
-	printf("wired %s\n", def_wired);
+	if_ctrl_set_flags(&if_ctrl, IFF_UP);
 	free_kv(config.opts->kv_pair);
+	if_ctrl_disconnect_socket(&if_ctrl);
 	return 0;
 }
