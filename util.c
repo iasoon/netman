@@ -110,11 +110,12 @@ get_element(const char *key, keyvalue_t *root)
 }
 
 void
-free_kv(keyvalue_t **root)
+free_kv(keyvalue_t *root)
 {
-	if ((*root)->key) free((*root)->key);
-	if ((*root)->type == VALUE_STR) free((*root)->value.str);
-	else free_kv(&(*root)->value.child);
-	if ((*root)->next) free_kv(&(*root)->next);
-	free(*root);
+	if (root == NULL) return;
+	if (root->key) free(root->key);
+	if (root->type == VALUE_STR) free(root->value.str);
+	else free_kv(root->value.child);
+	if (root->next) free_kv(root->next);
+	free(root);
 }

@@ -6,6 +6,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include "if_ctrl.h"
 #include "network.h"
 #include "util.h"
 #include "wpa_ctrl.h"
@@ -125,7 +126,16 @@ main(int argc, char *argv[])
 	config.opts = &opts;
 	arg_parse(argc, argv, &config);
 //	config.cmd(config.opts);
+	if_ctrl_t if_ctrl;
+	char protocol[IFNAMSIZ];
+	if_ctrl_populate_ifaddrs(&if_ctrl);
 
-	free_kv(&config.opts->kv_pair);
+	if_ctrl_print_addrs(&if_ctrl);
+
+	char *def_wireless = if_ctrl_get_default_wireless(&if_ctrl, protocol);
+	char *def_wired = if_ctrl_get_default_wired(&if_ctrl);
+	printf("wireless %s with protocol: %s\n", def_wireless, protocol);
+	printf("wired %s\n", def_wired);
+	free_kv(config.opts->kv_pair);
 	return 0;
 }

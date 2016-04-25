@@ -39,6 +39,6 @@ void set_str_quote(char **dest, const char *str);
 void set_stripped(char **dest, char *begin, char *end);
 keyvalue_t *mk_keyvalue(char *key, void *value, keyvalue_t *next, uint8_t type);
 union _vc get_element(const char *longkey, keyvalue_t *root);
-void free_kv(keyvalue_t **root);
+void free_kv(keyvalue_t *root);
 
 #endif
