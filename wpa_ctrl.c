@@ -7,7 +7,7 @@
 #include "util.h"
 #include "wpa_ctrl.h"
 
-#define SOCK_PATH "/var/run/wpa_supplicant/iface"
+#define SOCK_PATH "/var/run/wpa_supplicant/wlp58s0"
 #define BUFFER_SIZE 4096
 
 static int

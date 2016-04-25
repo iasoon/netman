@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -130,4 +129,13 @@ write_keyvalue(FILE *file, keyvalue_t *root){
 			}
 		}
 	}
+}
+
+keyvalue_t *
+netman_get_config()
+{
+	FILE *conf_file = fopen(NETMAN_CONFIG_LOCATION, "r");
+	keyvalue_t *conf = read_keyvalue(conf_file);
+	fclose(conf_file);
+	return conf;
 }

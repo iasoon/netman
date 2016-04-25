@@ -7,18 +7,20 @@
 #include <unistd.h>
 
 #include "if_ctrl.h"
+#include "netman_config.h"
 #include "network.h"
 #include "util.h"
 #include "wpa_ctrl.h"
 
-static options_t default_opts = { 
+static options_t default_opts = {
 	.cfg_path  = NULL,
 	.name      = NULL,
 	.interface = NULL,
 	.kv_pair   = NULL,
 	.no_save   = 0,
 	.verbose   = 0,
-	.quiet     = 0
+	.quiet     = 0,
+	.config    = 0
 };
 
 static action_t default_action = {
@@ -121,11 +123,13 @@ arg_parse(int argc, char *argv[], action_t *config)
 int
 main(int argc, char *argv[])
 {
-	action_t config = default_action;
+	action_t action = default_action;
 	options_t opts = default_opts;
-	config.opts = &opts;
-	arg_parse(argc, argv, &config);
-//	config.cmd(config.opts);
+	opts.config = netman_get_config();
+	action.opts = &opts;
+	arg_parse(argc, argv, &action);
+	action.cmd(action.opts);
+	return 0;
 	if_ctrl_t if_ctrl;
 	char protocol[IFNAMSIZ];
 	if_ctrl_populate_ifaddrs(&if_ctrl);
@@ -136,6 +140,6 @@ main(int argc, char *argv[])
 	char *def_wired = if_ctrl_get_default_wired(&if_ctrl);
 	printf("wireless %s with protocol: %s\n", def_wireless, protocol);
 	printf("wired %s\n", def_wired);
-	free_kv(config.opts->kv_pair);
+	free_kv(action.opts->kv_pair);
 	return 0;
 }

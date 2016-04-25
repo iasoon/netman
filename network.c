@@ -4,8 +4,10 @@ void
 netman_connect(options_t *options)
 {
 	wpa_network_t network;
-	network.name = options->name;
-	network.options = options->kv_pair;
+	network.id = 0;
+	keyvalue_t *network_config = get_element(options->name, options->config).child;
+	keyvalue_t *wpa_config = get_element("wireless", network_config).child;
+	network.options = wpa_config;
 	connect_to_network(&network);
 }
 

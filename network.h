@@ -12,6 +12,7 @@ struct netman_options {
 	int no_save;
 	int verbose;
 	int quiet;
+    keyvalue_t *config;
 };
 
 typedef struct netman_options options_t;
