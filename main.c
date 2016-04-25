@@ -21,13 +21,13 @@ static options_t default_opts = {
 	.quiet     = 0
 };
 
-static config_t default_conf = {
+static action_t default_action = {
 	.cmd  = NULL,
 	.opts = NULL
 };
 
 static int
-arg_parse(int argc, char *argv[], config_t *config)
+arg_parse(int argc, char *argv[], action_t *config)
 {
 	int ret_code;
 	int opt_idx = 0;
@@ -121,7 +121,7 @@ arg_parse(int argc, char *argv[], config_t *config)
 int
 main(int argc, char *argv[])
 {
-	config_t config = default_conf;
+	action_t config = default_action;
 	options_t opts = default_opts;
 	config.opts = &opts;
 	arg_parse(argc, argv, &config);
