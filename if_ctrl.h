@@ -2,8 +2,8 @@
 #define IF_CTRL_H_
 
 #include <errno.h>
-#include <ifaddrs.h>
-#include <linux/wireless.h>
+#define __USE_MISC
+#include <net/if.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,21 +15,16 @@
 #include "util.h"
 
 struct if_ctrl {
-	struct ifreq if_req;
-	struct iwreq iw_req;
-	struct ifaddrs *ifaddr;
+	struct ifreq if_req; /* To access the name of the iface: if_req.ifr_name */
 	int socket;
 };
 
 typedef struct if_ctrl if_ctrl_t;
 
-int if_ctrl_check_link(if_ctrl_t *if_ctrl, const char *ifname);
-int if_ctrl_check_wireless(if_ctrl_t *if_ctrl, const char *ifname, char *protocol);
-int if_ctrl_populate_ifaddrs(if_ctrl_t *if_ctrl);
-void if_ctrl_free_ifaddrs(if_ctrl_t *if_ctrl);
-char *if_ctrl_get_default_wired(if_ctrl_t *if_ctrl);
-char *if_ctrl_get_default_wireless(if_ctrl_t *if_ctrl, char protocol[IFNAMSIZ]);
-void if_ctrl_print_addrs(if_ctrl_t *if_ctrl);
+int if_ctrl_connect_socket(if_ctrl_t *if_ctrl);
+int if_ctrl_disconnect_socket(if_ctrl_t *if_ctrl);
+int if_ctrl_check_link(if_ctrl_t *if_ctrl);
+int if_ctrl_set_flags(if_ctrl_t *if_ctrl, int val);
 
 /* TODO: Clean up function */
 

@@ -12,6 +12,10 @@
 #include "util.h"
 #include "wpa_ctrl.h"
 
+static if_ctrl_t default_if_ctrl = {
+	.socket = -1,
+};
+
 static options_t default_opts = {
 	.cfg_path  = NULL,
 	.name      = NULL,
@@ -123,23 +127,19 @@ arg_parse(int argc, char *argv[], action_t *config)
 int
 main(int argc, char *argv[])
 {
+	if_ctrl_t if_ctrl = default_if_ctrl;
 	action_t action = default_action;
+
+	if_ctrl_connect_socket(&if_ctrl);
+
 	options_t opts = default_opts;
 	opts.config = netman_get_config();
+
 	action.opts = &opts;
 	arg_parse(argc, argv, &action);
 	action.cmd(action.opts);
-	return 0;
-	if_ctrl_t if_ctrl;
-	char protocol[IFNAMSIZ];
-	if_ctrl_populate_ifaddrs(&if_ctrl);
 
-	if_ctrl_print_addrs(&if_ctrl);
-
-	char *def_wireless = if_ctrl_get_default_wireless(&if_ctrl, protocol);
-	char *def_wired = if_ctrl_get_default_wired(&if_ctrl);
-	printf("wireless %s with protocol: %s\n", def_wireless, protocol);
-	printf("wired %s\n", def_wired);
+	if_ctrl_disconnect_socket(&if_ctrl);
 	free_kv(action.opts->kv_pair);
 	return 0;
 }
