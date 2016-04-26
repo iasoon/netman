@@ -4,7 +4,7 @@ TARGET := netman
 SRCS   := $(wildcard *.c)
 OBJS   := $(SRCS:.c=.o)
 
-.PHONY: all clean distclean options
+.PHONY: all install clean distclean options
 
 all: $(TARGET)
 
@@ -17,3 +17,12 @@ clean:
 	@- $(RM) $(OBJS)
 
 distclean: clean
+
+install:
+	@echo "Install"
+
+make_tests:
+	@echo "Build tests"
+
+test:
+	@echo "Run tests"

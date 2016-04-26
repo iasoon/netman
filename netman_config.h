@@ -5,7 +5,7 @@
 
 #include "util.h"
 
-#define NETMAN_CONFIG_LOCATION "config"
+#define NETMAN_CONFIG_LOCATION "netman.conf"
 
 keyvalue_t *netman_get_config();
 
