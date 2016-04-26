@@ -71,21 +71,21 @@ wpa_ctrl_connect(wpa_ctrl_t *wpa_ctrl, char* socket_addr)
 	int ret;
 
 	wpa_ctrl->socket = socket(AF_UNIX, SOCK_DGRAM, 0);
-	if (wpa_ctrl->socket < 0) return -1;
+	if (wpa_ctrl->socket < 0) return 0;
 
 	wpa_ctrl->local.sun_family = AF_UNIX;
 	snprintf(wpa_ctrl->local.sun_path, sizeof(wpa_ctrl->local.sun_path),
 			"/tmp/netman-%d", getpid());
 	ret = bind(wpa_ctrl->socket, (struct sockaddr*) &wpa_ctrl->local,
 			sizeof(struct sockaddr_un));
-	if (ret < 0) return -1;
+	if (ret < 0) return 0;
 
 	wpa_ctrl->remote.sun_family = AF_UNIX;
 	strcpy(wpa_ctrl->remote.sun_path, socket_addr);
 	ret = connect(wpa_ctrl->socket, (struct sockaddr*) &wpa_ctrl->remote,
 			sizeof(struct sockaddr_un));
-	if (ret < 0) return -1;
-	return 0;
+	if (ret < 0) return 0;
+	return 1;
 }
 
 static void
@@ -100,11 +100,14 @@ connect_to_network(wpa_network_t *network)
 {
 	wpa_ctrl_t wpa_ctrl;
 
-	wpa_ctrl_connect(&wpa_ctrl, SOCK_PATH);
-	wpa_ctrl_register(&wpa_ctrl, network);
-	wpa_ctrl_enable(&wpa_ctrl, network);
+	if (wpa_ctrl_connect(&wpa_ctrl, SOCK_PATH)) {
+		wpa_ctrl_register(&wpa_ctrl, network);
+		wpa_ctrl_enable(&wpa_ctrl, network);
 
-	wpa_ctrl_close(&wpa_ctrl);
+		wpa_ctrl_close(&wpa_ctrl);
+	} else {
+		fprintf(stderr, "could not connect to wpa_suplicant\n");
+	}
 }
 
 void
