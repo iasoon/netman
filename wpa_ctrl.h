@@ -21,7 +21,7 @@ struct wpa_ctrl {
 typedef struct wpa_network wpa_network_t;
 typedef struct wpa_ctrl wpa_ctrl_t;
 
-void connect_to_network(wpa_network_t *network);
-void reconnect_to_network();
+void wpa_connect_to_network(wpa_network_t *network);
+void wpa_reconnect_to_network();
 
 #endif

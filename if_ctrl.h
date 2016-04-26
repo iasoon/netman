@@ -21,10 +21,10 @@ struct if_ctrl {
 
 typedef struct if_ctrl if_ctrl_t;
 
-int if_ctrl_connect_socket(if_ctrl_t *if_ctrl);
-int if_ctrl_disconnect_socket(if_ctrl_t *if_ctrl);
 int if_ctrl_check_link(if_ctrl_t *if_ctrl);
-int if_ctrl_set_flags(if_ctrl_t *if_ctrl, int val);
+int wired_toggle_network(char *iface, int val);
+int wired_connect_to_network(char *iface);
+int wired_disconnect_from_network(char *iface);
 
 /* TODO: Clean up function */
 

@@ -96,7 +96,7 @@ wpa_ctrl_close(wpa_ctrl_t *wpa_ctrl)
 }
 
 void
-connect_to_network(wpa_network_t *network)
+wpa_connect_to_network(wpa_network_t *network)
 {
 	wpa_ctrl_t wpa_ctrl;
 
@@ -111,7 +111,7 @@ connect_to_network(wpa_network_t *network)
 }
 
 void
-reconnect_to_network()
+wpa_reconnect_to_network()
 {
 	char reply[BUFFER_SIZE];
 	wpa_ctrl_t wpa_ctrl;

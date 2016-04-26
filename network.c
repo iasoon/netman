@@ -7,15 +7,22 @@ netman_connect(options_t *options)
 	network.id = 0;
 	keyvalue_t *network_config = get_element(options->name, options->config).child;
 	keyvalue_t *wpa_config = get_element("wireless", network_config).child;
-	network.options = wpa_config;
-	connect_to_network(&network);
+	if (wpa_config != NULL) {
+		network.options = wpa_config;
+		wpa_connect_to_network(&network);
+	} else {
+		char *iface = get_element("iface", network_config).str;
+		if (wired_connect_to_network(iface) == 0) {
+			eprintf("Failed to connect to network with interface: %s\n", iface);
+		}
+	}
 }
 
 void
 netman_reconnect(options_t *options)
 {
 	DEBUG("TODO: %s\n", options->name);
-	reconnect_to_network();	
+	wpa_reconnect_to_network();	
 }
 
 void
