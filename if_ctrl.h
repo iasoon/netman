@@ -25,6 +25,7 @@ int if_ctrl_check_link(if_ctrl_t *if_ctrl);
 int wired_toggle_network(char *iface, int val);
 int wired_connect_to_network(char *iface);
 int wired_disconnect_from_network(char *iface);
+int wired_reconnect_to_network(char *iface);
 
 /* TODO: Clean up function */
 

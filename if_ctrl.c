@@ -108,3 +108,10 @@ wired_disconnect_from_network(char *iface)
 {
 	return wired_toggle_network(iface, -IFF_UP);
 }
+
+/* TODO: Test if this works */
+int
+wired_reconnect_to_network(char *iface)
+{
+	return wired_disconnect_from_network(iface) && wired_connect_to_network(iface);
+}
