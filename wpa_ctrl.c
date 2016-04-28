@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include "util.h"
@@ -40,6 +41,41 @@
 
 typedef int (*wpa_action_t)(char *);
 
+static int
+prompt_password(char *params)
+{
+	struct termios tp, save;
+	char buf[512];
+
+	if (tcgetattr(STDIN_FILENO, &tp) == -1) {
+		perror("tcgetattr");
+		return 0;
+	}	
+
+	save = tp;
+	tp.c_lflag &= ~ECHO;
+
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tp) == -1) {
+		perror("tcsetattr");
+		return 0;
+	}
+
+	printf("Password: ");
+	fflush(stdout);
+
+	if (fgets(buf, 512, stdin) == NULL) {
+		eprintf("EOF Error\n");
+		return 0;
+	}
+
+	if (tcsetattr(STDIN_FILENO, TCSANOW, &save) == -1) {
+		perror("tcsetattr");
+	}
+	
+	strcpy(params, buf);
+	return 1;
+}
+
 static char types[TYPES_NUM][128] = {
 	[CE_CON]           = "CTRL-EVENT-CONNECTED",
 	[CE_DCON]          = "CTRL-EVENT-DISCONNECTED",
@@ -75,7 +111,7 @@ static wpa_action_t handles[TYPES_NUM] = {
 	[CE_BSS_ADD]       = NULL, /* CTRL-EVENT-BSS-ADDED */
 	[CE_BSS_RM]        = NULL, /* CTRL-EVENT-BSS-REMOVED */
 	[CR_ID]            = NULL, /* CTRL-REQ-IDENTITY */
-	[CR_PASS]          = NULL, /* CTRL-REQ-PASSWORD */
+	[CR_PASS]          = prompt_password, /* CTRL-REQ-PASSWORD */
 	[CR_NEW_PASS]      = NULL, /* CTRL-REQ-NEW_PASSWORD */
 	[CR_PIN]           = NULL, /* CTRL-REQ-PIN */
 	[CR_OTP]           = NULL, /* CTRL-REQ-OTP */
