@@ -10,11 +10,111 @@
 #define SOCK_PATH "/var/run/wpa_supplicant"
 #define BUFFER_SIZE 4096
 
+#define TYPES_NUM 18
+
+#define CE_CON           0
+#define CE_DCON          1
+#define CE_TERM          2
+#define CE_PASS_CHANGED  3
+#define CE_EAP_NOTIF     4
+#define CE_EAP_START     5
+#define CE_EAP_METHOD    6
+#define CE_EAP_SUCCESS   7
+#define CE_EAP_FAIL      8
+#define CE_SCAN_RES      9
+#define CE_BSS_ADD      10
+#define CE_BSS_RM       11
+#define CR_ID           12
+#define CR_PASS         13
+#define CR_NEW_PASS     14
+#define CR_PIN          15
+#define CR_OTP          16
+#define CR_PASSPHRASE   17
+
+/* TODO:
+ * - How are we going to handle knowing which handle was called?
+ * - For example, CTRL-EVENT-CONNECTED, it's handle gets called
+ *   should we set a flag or are we going to explicitly check for
+ *   what the idx is?
+ */
+
+typedef int (*wpa_action_t)(char *);
+
+static char types[TYPES_NUM][128] = {
+	[CE_CON]           = "CTRL-EVENT-CONNECTED",
+	[CE_DCON]          = "CTRL-EVENT-DISCONNECTED",
+	[CE_TERM]          = "CTRL-EVENT-TERMINATING",
+	[CE_PASS_CHANGED]  = "CTRL-EVENT-PASSWORD_CHANGED",
+	[CE_EAP_NOTIF]     = "CTRL-EVENT-EAP-NOTIFICATION",
+	[CE_EAP_START]     = "CTRL-EVENT-EAP-STARTED",
+	[CE_EAP_METHOD]    = "CTRL-EVENT-EAP-METHOD",
+	[CE_EAP_SUCCESS]   = "CTRL-EVENT-EAP-SUCCESS",
+	[CE_EAP_FAIL]      = "CTRL-EVENT-EAP-FAILURE",
+	[CE_SCAN_RES]      = "CTRL-EVENT-SCAN-RESULTS",
+	[CE_BSS_ADD]       = "CTRL-EVENT-BSS-ADDED",
+	[CE_BSS_RM]        = "CTRL-EVENT-BSS-REMOVED",
+	[CR_ID]            = "CTRL-REQ-IDENTITY",
+	[CR_PASS]          = "CTRL-REQ-PASSWORD",
+	[CR_NEW_PASS]      = "CTRL-REQ-NEW_PASSWORD",
+	[CR_PIN]           = "CTRL-REQ-PIN",
+	[CR_OTP]           = "CTRL-REQ-OTP",
+	[CR_PASSPHRASE]    = "CTRL-REQ-PASSPHRASE",
+};
+
+static wpa_action_t handles[TYPES_NUM] = {
+	[CE_CON]           = NULL, /* CTRL-EVENT-CONNECTED */
+	[CE_DCON]          = NULL, /* CTRL-EVENT-DISCONNECTED */
+	[CE_TERM]          = NULL, /* CTRL-EVENT-TERMINATING */
+	[CE_PASS_CHANGED]  = NULL, /* CTRL-EVENT-PASSWORD-CHANGED */
+	[CE_EAP_NOTIF]     = NULL, /* CTRL-EVENT-EAP-NOTIFICATION */
+	[CE_EAP_START]     = NULL, /* CTRL-EVENT-EAP-STARTED */
+	[CE_EAP_METHOD]    = NULL, /* CTRL-EVENT-EAP-METHOD */
+	[CE_EAP_SUCCESS]   = NULL, /* CTRL-EVENT-EAP-SUCCESS */
+	[CE_EAP_FAIL]      = NULL, /* CTRL-EVENT-EAP-FAILURE */
+	[CE_SCAN_RES]      = NULL, /* CTRL-EVENT-SCAN-RESULTS */
+	[CE_BSS_ADD]       = NULL, /* CTRL-EVENT-BSS-ADDED */
+	[CE_BSS_RM]        = NULL, /* CTRL-EVENT-BSS-REMOVED */
+	[CR_ID]            = NULL, /* CTRL-REQ-IDENTITY */
+	[CR_PASS]          = NULL, /* CTRL-REQ-PASSWORD */
+	[CR_NEW_PASS]      = NULL, /* CTRL-REQ-NEW_PASSWORD */
+	[CR_PIN]           = NULL, /* CTRL-REQ-PIN */
+	[CR_OTP]           = NULL, /* CTRL-REQ-OTP */
+	[CR_PASSPHRASE]    = NULL, /* CTRL-REQ-PASSPHRASE */
+};
+
+int
+get_type(char buffer[BUFFER_SIZE])
+{
+	int i;
+	for (i = 0; i < TYPES_NUM; i++) {
+		if (strncmp(buffer, types[i], strlen(types[i])) == 0) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+void
+get_param_str(char buffer[BUFFER_SIZE], char params[512], int idx)
+{
+	char *type = types[idx];
+	while (*buffer == *type) {
+		type++;
+		buffer++;
+	}
+
+	buffer++;
+
+	strcpy(params, buffer);
+}
+
 static int
 wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
 {
 	char buffer[BUFFER_SIZE];
+	char params[512];
 	int nbytes, res;
+	int idx = -1;
 
 	strcpy(buffer, command);
 	DEBUG("%s\n", buffer);
@@ -28,7 +128,9 @@ wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
 		buffer[nbytes-1] = 0;
 		DEBUG("> %s\n", buffer);
 		if (buffer[0] == '<') {
-			/* skip control messages for now */
+			idx = get_type(buffer);
+			get_param_str(buffer, params, idx);
+			handles[idx](params);
 		} else {
 			strcpy(reply, buffer);
 			return nbytes;
