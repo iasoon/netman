@@ -6,12 +6,12 @@ netman_connect(options_t *options)
 	wpa_network_t network;
 	network.id = 0;
 	keyvalue_t *network_config = get_element(options->name, options->config).child;
+	char *iface = get_element("interface", network_config).str;
 	keyvalue_t *wpa_config = get_element("wireless", network_config).child;
 	if (wpa_config != NULL) {
 		network.options = wpa_config;
-		wpa_connect_to_network(&network);
+		wpa_connect_to_network(iface, &network);
 	} else {
-		char *iface = get_element("iface", network_config).str;
 		if (wired_connect_to_network(iface) == 0) {
 			eprintf("Failed to connect to network with interface: %s\n", iface);
 		}

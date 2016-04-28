@@ -7,7 +7,7 @@
 #include "util.h"
 #include "wpa_ctrl.h"
 
-#define SOCK_PATH "/var/run/wpa_supplicant/eth1"
+#define SOCK_PATH "/var/run/wpa_supplicant"
 #define BUFFER_SIZE 4096
 
 static int
@@ -96,11 +96,13 @@ wpa_ctrl_close(wpa_ctrl_t *wpa_ctrl)
 }
 
 void
-wpa_connect_to_network(wpa_network_t *network)
+wpa_connect_to_network(char *interface, wpa_network_t *network)
 {
 	wpa_ctrl_t wpa_ctrl;
+	char sock_addr[BUFFER_SIZE];
+	snprintf(sock_addr, BUFFER_SIZE, "%s/%s", SOCK_PATH, interface);
 
-	if (wpa_ctrl_connect(&wpa_ctrl, SOCK_PATH)) {
+	if (wpa_ctrl_connect(&wpa_ctrl, sock_addr)) {
 		wpa_ctrl_register(&wpa_ctrl, network);
 		wpa_ctrl_enable(&wpa_ctrl, network);
 
