@@ -1,5 +1,25 @@
 #include "network.h"
 
+
+/* TODO: Generalize this function, do not assume that there are no
+ * more children in the config.
+ * Example:
+ *    eduroam = {
+ *        wireless = {
+ *            ssid     = "eduroam"
+ *            password = "<password>"
+ *            ... 
+ *            1 = {
+ *                bssid = 00:11:22:33:44:55
+ *            }
+ *
+ *            2 = {
+ *                bssid = 11:22:33:44:55:66
+ *            }
+ *            ...
+ *        }
+ *    }
+ */
 void
 netman_connect(options_t *options)
 {
@@ -18,6 +38,7 @@ netman_connect(options_t *options)
 	}
 }
 
+/* TODO: This should handle wired aswell, shouldn't be too difficult to implement */
 void
 netman_reconnect(options_t *options)
 {
@@ -25,6 +46,10 @@ netman_reconnect(options_t *options)
 	wpa_reconnect_to_network();	
 }
 
+/* TODO: Implement blacklisting with wpa_supplicant - builtin
+ * ENABLE_NETWORK - DISABLE_NETWORK
+ * Config entry?
+ */
 void
 netman_blacklist(options_t *options)
 {

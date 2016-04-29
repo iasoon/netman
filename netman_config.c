@@ -43,7 +43,11 @@ extract_token(char *buffer, int num)
 	char *token, *c = buffer + num - 1;
 	while (*c == ' ' || *c == '\t' || *c == '\n') c--;
 	num = c - buffer + 1;
-	token = malloc(num+1);
+	if ((token = malloc(num+1)) == NULL) {
+		eprintf("Malloc failed\n");
+		exit(1);
+	}
+
 	memcpy(token, buffer, num);
 	token[num] = '\0';
 	return token;
@@ -68,7 +72,11 @@ read_keyvalue(FILE *file)
 			depth--;
 		} else {
 			/* attach a new node to the tree */
-			kv = malloc(sizeof(keyvalue_t));
+			if ((kv = malloc(sizeof(keyvalue_t))) == NULL) {
+				eprintf("Malloc failed\n");
+				exit(1);
+			}
+
 			if (predecessors[depth])
 				predecessors[depth]->next = kv;
 			else if (depth > 0)
@@ -121,7 +129,7 @@ write_keyvalue(FILE *file, keyvalue_t *root){
 				fprintf(file, "  ");
 			if (pos[depth]->type == VALUE_CHILD) {
 				fprintf(file, "%s = {\n", pos[depth]->key);
-				pos[depth+1] = pos [depth]->value.child;
+				pos[depth+1] = pos[depth]->value.child;
 				depth++;
 			} else {
 				fprintf(file, "%s = %s\n", pos[depth]->key, pos[depth]->value.str);

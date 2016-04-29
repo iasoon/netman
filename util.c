@@ -43,6 +43,8 @@ set_str_quote(char **dest, const char *src)
 		free(*dest);
 	}
 
+	*dest = NULL;
+
 	if ((temp = malloc(dest_len)) == NULL)
 		exit(1);
 
@@ -50,7 +52,6 @@ set_str_quote(char **dest, const char *src)
 		DEBUG("strcpy - set_str_quote NULL\n");
 		/* You get NULL */
 		free(temp);
-		temp = NULL;
 		return;
 	}
 
@@ -58,7 +59,6 @@ set_str_quote(char **dest, const char *src)
 		DEBUG("strcat - set_str_quote NULL\n");
 		/* You get NULL */
 		free(temp);
-		temp = NULL;
 		return;	
 	}
 
@@ -66,7 +66,6 @@ set_str_quote(char **dest, const char *src)
 		DEBUG("strcat - set_str_quote NULL\n");
 		/* You get NULL */
 		free(temp);
-		temp = NULL; 
 		return;
 	}
 
@@ -95,16 +94,16 @@ mk_keyvalue(char *key, void *ptr, keyvalue_t *next, uint8_t type)
 union _vc
 get_element(const char *key, keyvalue_t *root)
 {
+	static union _vc null = {
+		.str = NULL
+	};
+
 	while (root) {
 		if (strcmp(root->key, key) == 0)
 			return root->value;
 
 		root = root->next;
 	}	
-
-	static union _vc null = {
-		.str = NULL
-	};
 
 	return null;
 }

@@ -118,11 +118,12 @@ static wpa_action_t handles[TYPES_NUM] = {
 	[CR_PASSPHRASE]    = NULL, /* CTRL-REQ-PASSPHRASE */
 };
 
-int
+static int
 get_type(char buffer[BUFFER_SIZE])
 {
 	int i;
 	for (i = 0; i < TYPES_NUM; i++) {
+		/* Checks the beginning of the string */
 		if (strncmp(buffer, types[i], strlen(types[i])) == 0) {
 			return i;
 		}
@@ -130,15 +131,19 @@ get_type(char buffer[BUFFER_SIZE])
 	return -1;
 }
 
-void
+static void
 get_param_str(char buffer[BUFFER_SIZE], char params[512], int idx)
 {
 	char *type = types[idx];
+	/* Assume the type is shorter than the actual message */
 	while (*buffer == *type) {
 		type++;
 		buffer++;
 	}
 
+	/* Strip the - or the whitespace as documented in
+	 * https://w1.fi/wpa_supplicant/devel/ctrl_iface_page.html
+	 */
 	buffer++;
 
 	strcpy(params, buffer);
@@ -163,10 +168,16 @@ wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
 		/* remove trailing newline */
 		buffer[nbytes-1] = 0;
 		DEBUG("> %s\n", buffer);
+		/* CTRL messages start with <priority_level>*/
 		if (buffer[0] == '<') {
 			idx = get_type(buffer);
 			get_param_str(buffer, params, idx);
-			handles[idx](params);
+			/* Call the handle */
+			if (handles[idx](params) == 0) {
+				eprintf("Handle of type: %s failed\n", types[idx]);
+			}
+			/* FIXME: Temporary, this needs to reevaluated */
+			return nbytes;
 		} else {
 			strcpy(reply, buffer);
 			return nbytes;
@@ -180,8 +191,13 @@ wpa_ctrl_configure_network(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 	char buffer[BUFFER_SIZE];
 	keyvalue_t *kv;
 	for (kv = network->options; kv; kv = kv->next) {
-		snprintf(buffer, BUFFER_SIZE, "SET_NETWORK %s %s %s",
-				network->id, kv->key, kv->value.str);
+		if (snprintf(buffer, BUFFER_SIZE, "SET_NETWORK %s %s %s",
+				network->id, kv->key, kv->value.str) < 0) {
+			eprintf("Failed writing into buffer: SET_NETWORK %s %s %s\n",
+					network->id, kv->key, kv->value.str);
+			eprintf("Not calling the request\n");
+			return;
+		}
 		wpa_ctrl_request(wpa_ctrl, buffer, buffer);
 	}
 }
@@ -199,7 +215,11 @@ static void
 wpa_ctrl_enable(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 {
 	char buffer[BUFFER_SIZE];
-	snprintf(buffer, BUFFER_SIZE, "ENABLE_NETWORK %s", network->id);
+	if (snprintf(buffer, BUFFER_SIZE, "ENABLE_NETWORK %s", network->id) < 0) {
+		eprintf("Failed writing into buffer: ENABLE_NETWORK %s\n", network->id);
+		eprintf("Not calling the request\n");
+		return;
+	}
 	wpa_ctrl_request(wpa_ctrl, buffer, buffer);
 }
 
@@ -238,7 +258,11 @@ wpa_connect_to_network(char *interface, wpa_network_t *network)
 {
 	wpa_ctrl_t wpa_ctrl;
 	char sock_addr[BUFFER_SIZE];
-	snprintf(sock_addr, BUFFER_SIZE, "%s/%s", SOCK_PATH, interface);
+	if (snprintf(sock_addr, BUFFER_SIZE, "%s/%s", SOCK_PATH, interface) < 0) {
+		eprintf("Failed writing into buffer %s/%s\n", SOCK_PATH, interface);
+		eprintf("Not connecting\n");
+		return;
+	}
 
 	if (wpa_ctrl_connect(&wpa_ctrl, sock_addr)) {
 		wpa_ctrl_register(&wpa_ctrl, network);
