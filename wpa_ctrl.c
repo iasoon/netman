@@ -11,6 +11,8 @@
 #define SOCK_PATH "/var/run/wpa_supplicant"
 #define BUFFER_SIZE 4096
 
+#define PLEVEL_LEN 3
+
 #define TYPES_NUM 18
 
 #define CE_CON           0
@@ -76,6 +78,14 @@ prompt_password(char *params)
 	return 1;
 }
 
+static int
+netman_exit(char *params)
+{
+	/* TODO: properly clean up or something */
+	printf("%s\n", params);
+	exit(0);
+}
+
 static char types[TYPES_NUM][128] = {
 	[CE_CON]           = "CTRL-EVENT-CONNECTED",
 	[CE_DCON]          = "CTRL-EVENT-DISCONNECTED",
@@ -98,7 +108,7 @@ static char types[TYPES_NUM][128] = {
 };
 
 static wpa_action_t handles[TYPES_NUM] = {
-	[CE_CON]           = NULL, /* CTRL-EVENT-CONNECTED */
+	[CE_CON]           = netman_exit, /* CTRL-EVENT-CONNECTED */
 	[CE_DCON]          = NULL, /* CTRL-EVENT-DISCONNECTED */
 	[CE_TERM]          = NULL, /* CTRL-EVENT-TERMINATING */
 	[CE_PASS_CHANGED]  = NULL, /* CTRL-EVENT-PASSWORD-CHANGED */
@@ -153,9 +163,7 @@ static int
 wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
 {
 	char buffer[BUFFER_SIZE];
-	char params[512];
 	int nbytes, res;
-	int idx = -1;
 
 	strcpy(buffer, command);
 	DEBUG("%s\n", buffer);
@@ -168,19 +176,34 @@ wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
 		/* remove trailing newline */
 		buffer[nbytes-1] = 0;
 		DEBUG("> %s\n", buffer);
-		/* CTRL messages start with <priority_level>*/
-		if (buffer[0] == '<') {
-			idx = get_type(buffer);
-			get_param_str(buffer, params, idx);
-			/* Call the handle */
-			if (handles[idx](params) == 0) {
-				eprintf("Handle of type: %s failed\n", types[idx]);
-			}
-			/* FIXME: Temporary, this needs to reevaluated */
-			return nbytes;
-		} else {
+		if (buffer[0] != '<') {
 			strcpy(reply, buffer);
 			return nbytes;
+		}
+	}
+}
+
+static void
+wpa_ctrl_handle_messages(wpa_ctrl_t *wpa_ctrl)
+{
+	char buffer[BUFFER_SIZE];
+	char params[512];
+	int nbytes, idx = -1;
+
+	wpa_ctrl_request(wpa_ctrl, "ATTACH", buffer);
+	for (;;) {
+		nbytes = read(wpa_ctrl->socket, buffer, BUFFER_SIZE);
+		/* remove trailing newline */
+		buffer[nbytes] = 0;
+		DEBUG("> %s\n", buffer);
+		if (buffer[0] == '<') {
+			idx = get_type(buffer+PLEVEL_LEN);
+			if (idx >= 0 && handles[idx]) {
+				get_param_str(buffer+PLEVEL_LEN, params, idx);
+				if (handles[idx](params) == 0) {
+					eprintf("Handle of type: %s failed\n", types[idx]);
+				}
+			}
 		}
 	}
 }
@@ -267,8 +290,7 @@ wpa_connect_to_network(char *interface, wpa_network_t *network)
 	if (wpa_ctrl_connect(&wpa_ctrl, sock_addr)) {
 		wpa_ctrl_register(&wpa_ctrl, network);
 		wpa_ctrl_enable(&wpa_ctrl, network);
-
-		wpa_ctrl_close(&wpa_ctrl);
+		wpa_ctrl_handle_messages(&wpa_ctrl);
 	} else {
 		fprintf(stderr, "could not connect to wpa_suplicant\n");
 	}
