@@ -28,21 +28,6 @@ if_ctrl_disconnect_socket(if_ctrl_t *if_ctrl)
 	return 1;
 }
 
-int
-if_ctrl_check_link(if_ctrl_t *if_ctrl)
-{
-	int ret_val = -1;
-
-	ret_val = ioctl(if_ctrl->socket, SIOCGIFFLAGS, &if_ctrl->if_req);
-	if (ret_val == -1) {
-		perror("Ioctl failed.");
-		return 0;
-	}
-
-	return (if_ctrl->if_req.ifr_flags & IFF_UP) &&
-		(if_ctrl->if_req.ifr_flags & IFF_RUNNING);
-}
-
 static int
 if_ctrl_set_flags(if_ctrl_t *if_ctrl, int val)
 {
@@ -75,9 +60,35 @@ if_ctrl_set_flags(if_ctrl_t *if_ctrl, int val)
 
 	return 1;
 }
+	
+static int
+if_check_link(char *iface)
+{
+	int ret_val = -1;
+	if_ctrl_t if_ctrl = default_if_ctrl;
+	if_ctrl_connect_socket(&if_ctrl);
 
-int
-wired_toggle_network(char *iface, int val)
+	if (strcpy(if_ctrl.if_req.ifr_name, iface) == NULL) {
+		if_ctrl_disconnect_socket(&if_ctrl);
+		return 0;
+	}
+
+	ret_val = ioctl(if_ctrl.socket, SIOCGIFFLAGS, &if_ctrl.if_req);
+	if (ret_val == -1) {
+		perror("Ioctl failed.");
+		if_ctrl_disconnect_socket(&if_ctrl);
+		return 0;
+	}
+
+	if_ctrl_disconnect_socket(&if_ctrl);
+
+	return (if_ctrl.if_req.ifr_flags & IFF_UP) &&
+		(if_ctrl.if_req.ifr_flags & IFF_RUNNING);
+}
+
+
+static int
+if_toggle(char *iface, int val)
 {
 	if_ctrl_t if_ctrl = default_if_ctrl;
 	if_ctrl_connect_socket(&if_ctrl);
@@ -98,20 +109,53 @@ wired_toggle_network(char *iface, int val)
 }
 
 int
-wired_connect_to_network(char *iface)
+if_up(char *iface)
 {
-	return wired_toggle_network(iface, IFF_UP);
+	return if_toggle(iface, IFF_UP);
 }
 
 int
-wired_disconnect_from_network(char *iface)
+if_down(char *iface)
 {
-	return wired_toggle_network(iface, -IFF_UP);
+	return if_toggle(iface, -IFF_UP);
 }
 
-/* TODO: Test if this works */
 int
-wired_reconnect_to_network(char *iface)
+if_reenable()
 {
-	return wired_disconnect_from_network(iface) && wired_connect_to_network(iface);
+	struct ifaddrs *addrs = NULL, *addr = NULL;
+
+	if (getifaddrs(&addrs) != 0) {
+		perror("getifaddrs");
+		return 0;
+	}
+
+	for (addr = addrs; addr; addr = addr->ifa_next) {
+		/* Check only the interfaces that are up 
+		 * This also includes the interfaces that might be:
+		 * - unknown
+		 * - dormant
+		 * - up
+		 */
+		if (addr->ifa_addr && 
+				addr->ifa_addr->sa_family == AF_PACKET &&
+				strcmp(addr->ifa_name, "lo") != 0 &&
+				if_check_link(addr->ifa_name) != 0) {
+
+			if (if_down(addr->ifa_name) == 0) {
+				eprintf("Failed to put the interface down: %s\n", 
+						addr->ifa_name);
+				return 0;
+			}
+
+			if (if_up(addr->ifa_name) == 0) {
+				eprintf("Failed to put the interface up: %s\n",
+						addr->ifa_name);
+				return 0;
+			}
+		}
+	}
+
+	freeifaddrs(addrs);
+	return 1;
 }

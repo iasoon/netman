@@ -32,18 +32,17 @@ netman_connect(options_t *options)
 		network.options = wpa_config;
 		wpa_connect_to_network(iface, &network);
 	} else {
-		if (wired_connect_to_network(iface) == 0) {
+		if (if_up(iface) == 0) {
 			eprintf("Failed to connect to network with interface: %s\n", iface);
 		}
 	}
 }
 
-/* TODO: This should handle wired aswell, shouldn't be too difficult to implement */
 void
 netman_reconnect(options_t *options)
 {
 	DEBUG("TODO: %s\n", options->name);
-	wpa_reconnect_to_network();	
+	if_reenable();	
 }
 
 /* TODO: Implement blacklisting with wpa_supplicant - builtin

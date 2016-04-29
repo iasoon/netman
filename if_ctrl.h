@@ -2,6 +2,7 @@
 #define IF_CTRL_H_
 
 #include <errno.h>
+#include <ifaddrs.h>
 #define __USE_MISC
 #include <net/if.h>
 #include <netinet/in.h>
@@ -21,11 +22,9 @@ struct if_ctrl {
 
 typedef struct if_ctrl if_ctrl_t;
 
-int if_ctrl_check_link(if_ctrl_t *if_ctrl);
-int wired_toggle_network(char *iface, int val);
-int wired_connect_to_network(char *iface);
-int wired_disconnect_from_network(char *iface);
-int wired_reconnect_to_network(char *iface);
+int if_up(char *iface);
+int if_down(char *iface);
+int if_reenable();
 
 /* TODO: Clean up function */
 
