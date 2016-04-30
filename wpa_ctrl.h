@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include "netman_state.h"
 #include "util.h"
 
 struct wpa_network {
@@ -21,7 +22,7 @@ struct wpa_ctrl {
 typedef struct wpa_network wpa_network_t;
 typedef struct wpa_ctrl wpa_ctrl_t;
 
-void wpa_connect_to_network(char *interface, wpa_network_t *network);
+void wpa_connect_to_network(state_t *state, char *interface, wpa_network_t *network);
 void wpa_reconnect_to_network();
 
 #endif

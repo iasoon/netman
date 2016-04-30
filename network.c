@@ -24,16 +24,19 @@ void
 netman_connect(state_t *state)
 {
 	wpa_network_t network;
-	network.id = 0;
 	keyvalue_t *network_config = get_element(
 			state->options.network,
 			state->config
 		).child;
 	char *iface = get_element("interface", network_config).str;
 	keyvalue_t *wpa_config = get_element("wireless", network_config).child;
+
+	network.id = 0;
+	state->state = NETMAN_STATE_CONNECTING;
+
 	if (wpa_config != NULL) {
 		network.options = wpa_config;
-		wpa_connect_to_network(iface, &network);
+		wpa_connect_to_network(state, iface, &network);
 	} else {
 		if (if_up(iface) == 0) {
 			eprintf("Failed to connect to network with interface: %s\n", iface);

@@ -34,14 +34,7 @@
 #define CR_OTP          16
 #define CR_PASSPHRASE   17
 
-/* TODO:
- * - How are we going to handle knowing which handle was called?
- * - For example, CTRL-EVENT-CONNECTED, it's handle gets called
- *   should we set a flag or are we going to explicitly check for
- *   what the idx is?
- */
-
-typedef int (*wpa_action_t)(char *);
+typedef void (*wpa_action_t)(state_t *state, char *params);
 
 static int
 prompt_password(char *params)
@@ -78,8 +71,8 @@ prompt_password(char *params)
 	return 1;
 }
 
-static int
-netman_exit(char *params)
+static void
+netman_exit(state_t *state, char *params)
 {
 	/* TODO: properly clean up or something */
 	printf("%s\n", params);
@@ -105,27 +98,6 @@ static char types[TYPES_NUM][128] = {
 	[CR_PIN]           = "CTRL-REQ-PIN",
 	[CR_OTP]           = "CTRL-REQ-OTP",
 	[CR_PASSPHRASE]    = "CTRL-REQ-PASSPHRASE",
-};
-
-static wpa_action_t handles[TYPES_NUM] = {
-	[CE_CON]           = netman_exit, /* CTRL-EVENT-CONNECTED */
-	[CE_DCON]          = NULL, /* CTRL-EVENT-DISCONNECTED */
-	[CE_TERM]          = NULL, /* CTRL-EVENT-TERMINATING */
-	[CE_PASS_CHANGED]  = NULL, /* CTRL-EVENT-PASSWORD-CHANGED */
-	[CE_EAP_NOTIF]     = NULL, /* CTRL-EVENT-EAP-NOTIFICATION */
-	[CE_EAP_START]     = NULL, /* CTRL-EVENT-EAP-STARTED */
-	[CE_EAP_METHOD]    = NULL, /* CTRL-EVENT-EAP-METHOD */
-	[CE_EAP_SUCCESS]   = NULL, /* CTRL-EVENT-EAP-SUCCESS */
-	[CE_EAP_FAIL]      = NULL, /* CTRL-EVENT-EAP-FAILURE */
-	[CE_SCAN_RES]      = NULL, /* CTRL-EVENT-SCAN-RESULTS */
-	[CE_BSS_ADD]       = NULL, /* CTRL-EVENT-BSS-ADDED */
-	[CE_BSS_RM]        = NULL, /* CTRL-EVENT-BSS-REMOVED */
-	[CR_ID]            = NULL, /* CTRL-REQ-IDENTITY */
-	[CR_PASS]          = prompt_password, /* CTRL-REQ-PASSWORD */
-	[CR_NEW_PASS]      = NULL, /* CTRL-REQ-NEW_PASSWORD */
-	[CR_PIN]           = NULL, /* CTRL-REQ-PIN */
-	[CR_OTP]           = NULL, /* CTRL-REQ-OTP */
-	[CR_PASSPHRASE]    = NULL, /* CTRL-REQ-PASSPHRASE */
 };
 
 static int
@@ -171,24 +143,24 @@ wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
 	if (res < 0) return -1;
 
 	/* receive reply */
-	for (;;) {
-		nbytes = read(wpa_ctrl->socket, buffer, BUFFER_SIZE);
-		/* remove trailing newline */
-		buffer[nbytes-1] = 0;
-		DEBUG("> %s\n", buffer);
-		if (buffer[0] != '<') {
-			strcpy(reply, buffer);
-			return nbytes;
-		}
-	}
+	nbytes = read(wpa_ctrl->socket, buffer, BUFFER_SIZE);
+	/* remove trailing newline */
+	buffer[nbytes-1] = 0;
+	DEBUG("> %s\n", buffer);
+	strcpy(reply, buffer);
+	return nbytes;
 }
 
 static void
-wpa_ctrl_handle_messages(wpa_ctrl_t *wpa_ctrl)
+wpa_ctrl_handle_messages(state_t *state, wpa_ctrl_t *wpa_ctrl)
 {
 	char buffer[BUFFER_SIZE];
 	char params[512];
 	int nbytes, idx = -1;
+	wpa_action_t handle;
+
+	wpa_action_t handles[TYPES_NUM][NETMAN_NUM_STATES][NETMAN_NUM_MODES] = {0};
+	handles[CE_CON][NETMAN_STATE_CONNECTING][NETMAN_MODE_CONNECT] = netman_exit;
 
 	wpa_ctrl_request(wpa_ctrl, "ATTACH", buffer);
 	for (;;) {
@@ -196,14 +168,13 @@ wpa_ctrl_handle_messages(wpa_ctrl_t *wpa_ctrl)
 		/* remove trailing newline */
 		buffer[nbytes] = 0;
 		DEBUG("> %s\n", buffer);
-		if (buffer[0] == '<') {
-			idx = get_type(buffer+PLEVEL_LEN);
-			if (idx >= 0 && handles[idx]) {
-				get_param_str(buffer+PLEVEL_LEN, params, idx);
-				if (handles[idx](params) == 0) {
-					eprintf("Handle of type: %s failed\n", types[idx]);
-				}
-			}
+		if (buffer[0] != '<') continue;
+		idx = get_type(buffer+PLEVEL_LEN);
+		if (idx < 0) continue;
+		handle = handles[idx][state->state][state->mode];
+		if (handle) {
+			get_param_str(buffer+PLEVEL_LEN, params, idx);
+			handle(state, params);
 		}
 	}
 }
@@ -277,7 +248,7 @@ wpa_ctrl_close(wpa_ctrl_t *wpa_ctrl)
 }
 
 void
-wpa_connect_to_network(char *interface, wpa_network_t *network)
+wpa_connect_to_network(state_t *state, char *interface, wpa_network_t *network)
 {
 	wpa_ctrl_t wpa_ctrl;
 	char sock_addr[BUFFER_SIZE];
@@ -290,7 +261,7 @@ wpa_connect_to_network(char *interface, wpa_network_t *network)
 	if (wpa_ctrl_connect(&wpa_ctrl, sock_addr)) {
 		wpa_ctrl_register(&wpa_ctrl, network);
 		wpa_ctrl_enable(&wpa_ctrl, network);
-		wpa_ctrl_handle_messages(&wpa_ctrl);
+		wpa_ctrl_handle_messages(state, &wpa_ctrl);
 	} else {
 		fprintf(stderr, "could not connect to wpa_suplicant\n");
 	}
