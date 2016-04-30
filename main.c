@@ -32,7 +32,7 @@ arg_parse(int argc, char *argv[], int *mode, options_t *options)
 	char *psk_str = NULL;
 
 	struct option long_options[] = {
-		{ "no-save",       no_argument,       0,                       0  },
+		{ "no-save",       no_argument,       &options->no_save,       0  },
 		{ "verbose",       no_argument,       0,                      'v' },
 		{ "quiet",         no_argument,       0,                      'q' },
 		{ "connect",       required_argument, 0,                      'c' },
@@ -40,7 +40,6 @@ arg_parse(int argc, char *argv[], int *mode, options_t *options)
 		{ "reconnect",     no_argument,       0,                      'r' },
 		{ "passphrase",    required_argument, 0,                      'p' },
 		{ "scan",          no_argument,       0,                      's' },
-		{ "scan-networks", no_argument,       0,                      'S' },
 		{ "ssid",          required_argument, 0,                      'n' },
 	};
 
@@ -50,64 +49,51 @@ arg_parse(int argc, char *argv[], int *mode, options_t *options)
 					long_options, &opt_idx)) != -1) {
 		DEBUG("ret_code: %d\n", ret_code);
 		switch (ret_code) {
-			/* case 0: */
-				/* DEBUG("Option %s\n", long_options[opt_idx].name); */
-				/* if (long_options[opt_idx].flag != 0) break; */
-				/* break; */
-			/* case 'v': */
-				/* if (config->opts->quiet == 0) */
-					/* config->opts->verbose = 1; */
-				/* DEBUG("Verbose flag %d\n", config->opts->verbose); */
-				/* break; */
-			/* case 'q': */
-				/* if (config->opts->verbose == 0) */
-					/* config->opts->quiet = 1; */
-				/* DEBUG("Quiet flag %d\n", config->opts->quiet); */
-				/* break; */
+			case 0:
+				break;
+			case 'v':
+				if (options->quiet == 0)
+					options->verbose = 1;
+				break;
+			case 'q':
+				if (options->verbose == 0)
+					options->quiet = 1;
+				break;
 			case 'c':
 				if (*mode == NETMAN_MODE_NOP){
 					*mode = NETMAN_MODE_CONNECT;
 					set_str(&options->network, optarg);
-					DEBUG("Connect to %s\n", options->network);
 				}
 				break;
-			/* case 'b': */
-				/* if (config->cmd == NULL) { */
-					/* config->cmd = netman_blacklist; */
-					/* set_str(&config->opts->name, optarg); */
-					/* DEBUG("Blacklist %s\n", config->opts->name); */
-				/* } */
-				/* break; */
-			/* case 'r': */
-				/* if (config->cmd == NULL) { */
-					/* DEBUG("Reconnect\n"); */
-					/* config->cmd = netman_reconnect; */
-				/* } */
-				/* break; */
-			/* case 'p': [> Keyvalue <] */
-				/* set_str_quote(&psk_str, optarg); */
-				/* config->opts->kv_pair = mk_keyvalue("psk", psk_str, config->opts->kv_pair, VALUE_STR); */
-				/* DEBUG("Set the PSK: %s\n", psk_str); */
-				/* free(psk_str); */
-				/* break; */
-			/* case 's': */
-				/* if (config->cmd == NULL) { */
-					/* config->cmd = netman_scan; */
-					/* DEBUG("Scan\n"); */
-				/* } */
-				/* break; */
-			/* case 'S': */
-				/* if (config->cmd == NULL) { */
-					/* config->cmd = netman_scan_networks; */
-					/* DEBUG("Scan networks\n"); */
-				/* } */
-				/* break; */
-			/* case 'n': [> Keyvalue <] */
-				/* set_str_quote(&ssid_str, optarg); */
-				/* config->opts->kv_pair = mk_keyvalue("ssid", ssid_str, config->opts->kv_pair, VALUE_STR); */
-				/* free(ssid_str); */
-				/* DEBUG("Set the SSID\n"); */
-				/* break; */
+			/*case 'b':
+				if (*mode == NETMAN_MODE_NOP) {
+					config->cmd = netman_blacklist;
+					set_str(&config->opts->name, optarg);
+					DEBUG("Blacklist %s\n", config->opts->name);
+				}
+				break; */
+			case 'r':
+				if (*mode == NETMAN_MODE_NOP) {
+					*mode = NETMAN_MODE_RECONNECT;
+				}
+				break;
+			case 'p':
+				set_str_quote(&psk_str, optarg);
+				options->wpa_options = mk_keyvalue("psk",
+						psk_str, options->wpa_options, VALUE_STR);
+				free(psk_str);
+				break;
+			case 's':
+				if (*mode == NETMAN_MODE_NOP) {
+					*mode = NETMAN_MODE_SCAN;
+				}
+				break;
+			case 'n':
+				set_str_quote(&ssid_str, optarg);
+				options->wpa_options = mk_keyvalue("ssid", 
+						ssid_str, options->wpa_options, VALUE_STR);
+				free(ssid_str);
+				break;
 			default:
 				eprintf("Sumting wong\n");
 		}
