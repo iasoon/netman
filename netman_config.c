@@ -143,6 +143,10 @@ keyvalue_t *
 netman_get_config()
 {
 	FILE *conf_file = fopen(NETMAN_CONFIG_LOCATION, "r");
+	if (!conf_file) {
+		DEBUG("couldn't open config file\n");
+		return NULL;
+	}
 	keyvalue_t *conf = read_keyvalue(conf_file);
 	fclose(conf_file);
 	return conf;
