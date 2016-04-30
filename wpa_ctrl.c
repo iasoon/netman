@@ -159,8 +159,8 @@ wpa_ctrl_handle_messages(state_t *state, wpa_ctrl_t *wpa_ctrl)
 	int nbytes, idx = -1;
 	wpa_action_t handle;
 
-	wpa_action_t handles[TYPES_NUM][NETMAN_NUM_STATES][NETMAN_NUM_MODES] = {0};
-	handles[CE_CON][NETMAN_STATE_CONNECTING][NETMAN_MODE_CONNECT] = netman_exit;
+	wpa_action_t handles[TYPES_NUM][NETMAN_NUM_STATES] = {0};
+	handles[CE_CON][NETMAN_STATE_CONNECTING] = netman_exit;
 
 	wpa_ctrl_request(wpa_ctrl, "ATTACH", buffer);
 	for (;;) {
@@ -171,7 +171,7 @@ wpa_ctrl_handle_messages(state_t *state, wpa_ctrl_t *wpa_ctrl)
 		if (buffer[0] != '<') continue;
 		idx = get_type(buffer+PLEVEL_LEN);
 		if (idx < 0) continue;
-		handle = handles[idx][state->state][state->mode];
+		handle = handles[idx][state->state];
 		if (handle) {
 			get_param_str(buffer+PLEVEL_LEN, params, idx);
 			handle(state, params);
