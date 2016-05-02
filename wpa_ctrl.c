@@ -36,15 +36,28 @@
 
 typedef void (*wpa_action_t)(state_t *state, char *params);
 
-static int
-prompt_password(char *params)
+static void
+get_nid(char nid[4], char *params)
+{
+	while (*params != '-') {
+		*nid++ = *params++;
+	}	
+}
+
+/* FIXME: Currently prints to stdout */
+static void 
+prompt_password(state_t *state, char *params)
 {
 	struct termios tp, save;
-	char buf[512];
+	char buf[BUFFER_SIZE] = "CTRL-RSP-";
+	char pwd[512];
+	char nid[4] = {0};
+
+	get_nid(nid, params);
 
 	if (tcgetattr(STDIN_FILENO, &tp) == -1) {
 		perror("tcgetattr");
-		return 0;
+		return;
 	}	
 
 	save = tp;
@@ -52,23 +65,37 @@ prompt_password(char *params)
 
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tp) == -1) {
 		perror("tcsetattr");
-		return 0;
+		return;
 	}
 
 	printf("Password: ");
 	fflush(stdout);
 
-	if (fgets(buf, 512, stdin) == NULL) {
+	if (fgets(pwd, 512, stdin) == NULL) {
 		eprintf("EOF Error\n");
-		return 0;
+		return;
 	}
 
 	if (tcsetattr(STDIN_FILENO, TCSANOW, &save) == -1) {
 		perror("tcsetattr");
 	}
-	
-	strcpy(params, buf);
-	return 1;
+
+	if (strcat(buf, nid) == NULL) {
+		eprintf("strcat error\n");
+		return;
+	}
+
+	if (strcat(buf, "-") == NULL) {
+		eprintf("strcat error\n");
+		return;
+	}
+
+	if (strcat(buf, pwd) == NULL) {
+		eprintf("strcat error\n");
+		return;
+	}
+
+	DEBUG("%s\n", buf);
 }
 
 static void
