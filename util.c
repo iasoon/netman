@@ -73,7 +73,7 @@ set_str_quote(char **dest, const char *src)
 }
 
 hashtable_t *
-mk_hashtable(int size)
+mk_hashtable(uint32_t size)
 {
 	hashtable_t *h = NULL;
 
@@ -100,7 +100,7 @@ mk_hashtable(int size)
 void
 free_hashtable(hashtable_t *h)
 {
-	int i;
+	uint32_t i;
 	struct hash_link *tmp = NULL;
 	struct hash_link *next = NULL;
 	for (i = 0; i < h->size; i++) {
@@ -153,8 +153,8 @@ mk_hash_link(const char *key, void *ptr)
 static int
 hash(hashtable_t *h, const char *key)
 {
-	unsigned long val = 0;
-	unsigned i = 0;
+	uint32_t val = 0;
+	uint32_t i = 0;
 
 	while (val < ULONG_MAX && i < strlen(key)) {
 		val <<= 8;
@@ -168,13 +168,12 @@ hash(hashtable_t *h, const char *key)
 void
 hash_add(hashtable_t *h, const char *key, void *ptr)
 {
-	int bin = 0;
+	uint32_t bin = 0;
 	struct hash_link *new = NULL;
 	struct hash_link *next = NULL;
 	struct hash_link *last = NULL;
 	
 	bin = hash(h, key);
-
 	next = h->table[bin];
 
 	while (next != NULL && next->key != NULL &&
@@ -204,11 +203,10 @@ hash_add(hashtable_t *h, const char *key, void *ptr)
 void *
 hash_get_ptr(hashtable_t *h, const char *key)
 {
-	int bin = 0;
+	uint32_t bin = 0;
 	struct hash_link *pair;
 
 	bin = hash(h, key);
-
 	pair = h->table[bin];
 
 	while (pair != NULL && pair->key != NULL && strcmp(key, pair->key) > 0)
