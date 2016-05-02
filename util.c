@@ -72,6 +72,154 @@ set_str_quote(char **dest, const char *src)
 	*dest = temp;
 }
 
+hashtable_t *
+mk_hashtable(int size)
+{
+	hashtable_t *h = NULL;
+
+	if (size < 1) {
+		eprintf("Size cannot be lesser than 1\n");
+		return NULL;
+	}
+
+	if ((h = malloc(sizeof(hashtable_t))) == NULL) {
+		eprintf("Malloc failed\n");
+		return NULL;
+	}
+
+	if ((h->table = calloc(size, sizeof(struct hash_link*))) == NULL) {
+		eprintf("Malloc failed\n");
+		return NULL;
+	}
+
+	h->size = size;
+
+	return h;
+}
+
+void
+free_hashtable(hashtable_t *h)
+{
+	int i;
+	struct hash_link *tmp = NULL;
+	struct hash_link *next = NULL;
+	for (i = 0; i < h->size; i++) {
+		tmp = h->table[i];
+		while(tmp != NULL) {
+			next = tmp->next;
+			free(tmp->key);
+			free(tmp);
+			tmp = next;
+		}
+	}
+
+	free(h->table);
+}
+
+static struct hash_link *
+mk_hash_link(const char *key, void *ptr)
+{
+	struct hash_link *new = NULL;
+
+	if (key == NULL) {
+		eprintf("Key cannot be NULL\n");
+		return NULL;
+	}
+
+	if (ptr == NULL) {
+		eprintf("Function cannot be NULL\n");
+		return NULL;
+	}
+
+	if ((new = malloc(sizeof(struct hash_link))) == NULL) {
+		eprintf("Malloc failed\n");
+		return NULL;
+	}
+	new->key = NULL;
+	new->ptr = NULL;
+
+	set_str(&new->key, key);
+
+	if (new->key == NULL) {
+		eprintf("set_str failed\n");
+		return NULL;
+	}
+
+	new->ptr = ptr;
+	new->next = NULL;
+	return new;
+}
+
+static int
+hash(hashtable_t *h, const char *key)
+{
+	unsigned long val = 0;
+	unsigned i = 0;
+
+	while (val < ULONG_MAX && i < strlen(key)) {
+		val <<= 8;
+		val += key[i];
+		i++;	
+	}
+
+	return val % h->size;
+}
+
+void
+hash_add(hashtable_t *h, const char *key, void *ptr)
+{
+	int bin = 0;
+	struct hash_link *new = NULL;
+	struct hash_link *next = NULL;
+	struct hash_link *last = NULL;
+	
+	bin = hash(h, key);
+
+	next = h->table[bin];
+
+	while (next != NULL && next->key != NULL &&
+			strcmp(key, next->key) > 0) {
+		last = next;
+		next = next->next;
+	}
+
+	if (next != NULL && next->key != NULL &&
+			strcmp(key, next->key) == 0) {
+		next->ptr = ptr;
+	} else {
+		new = mk_hash_link(key, ptr);
+
+		if (next == h->table[bin]) {
+			new->next = next;
+			h->table[bin] = new;
+		} else if (next == NULL) {
+			last->next = new;
+		} else {
+			new->next = next;
+			last->next = new;
+		}
+	}
+}
+
+void *
+hash_get_ptr(hashtable_t *h, const char *key)
+{
+	int bin = 0;
+	struct hash_link *pair;
+
+	bin = hash(h, key);
+
+	pair = h->table[bin];
+
+	while (pair != NULL && pair->key != NULL && strcmp(key, pair->key) > 0)
+		pair = pair->next;
+
+	if (pair == NULL || pair->key == NULL || strcmp(key, pair->key) != 0)
+		return NULL;
+	else
+		return pair->ptr;
+}
+
 keyvalue_t *
 mk_keyvalue(char *key, void *ptr, keyvalue_t *next, uint8_t type)
 {
