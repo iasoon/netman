@@ -8,8 +8,7 @@
 #include "util.h"
 
 struct wpa_network {
-	char *name;
-	char *id;
+	int id;
 	struct keyvalue *options;
 };
 

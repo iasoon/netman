@@ -213,9 +213,9 @@ wpa_ctrl_configure_network(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 	char buffer[BUFFER_SIZE];
 	keyvalue_t *kv;
 	for (kv = network->options; kv; kv = kv->next) {
-		if (snprintf(buffer, BUFFER_SIZE, "SET_NETWORK %s %s %s",
+		if (snprintf(buffer, BUFFER_SIZE, "SET_NETWORK %d %s %s",
 				network->id, kv->key, kv->value.str) < 0) {
-			eprintf("Failed writing into buffer: SET_NETWORK %s %s %s\n",
+			eprintf("Failed writing into buffer: SET_NETWORK %d %s %s\n",
 					network->id, kv->key, kv->value.str);
 			eprintf("Not calling the request\n");
 			return;
@@ -229,7 +229,7 @@ wpa_ctrl_register(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 {
 	char buffer[BUFFER_SIZE];
 	wpa_ctrl_request(wpa_ctrl, "ADD_NETWORK", buffer);
-	set_str(&network->id, buffer);
+	sscanf(buffer, "%d", &network->id);
 	wpa_ctrl_configure_network(wpa_ctrl, network);
 }
 
@@ -237,31 +237,32 @@ static void
 wpa_ctrl_enable(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 {
 	char buffer[BUFFER_SIZE];
-	if (snprintf(buffer, BUFFER_SIZE, "ENABLE_NETWORK %s", network->id) < 0) {
-		eprintf("Failed writing into buffer: ENABLE_NETWORK %s\n", network->id);
+	if (snprintf(buffer, BUFFER_SIZE, "ENABLE_NETWORK %d", network->id) < 0) {
+		eprintf("Failed writing into buffer: ENABLE_NETWORK %d\n", network->id);
 		eprintf("Not calling the request\n");
 		return;
 	}
 	wpa_ctrl_request(wpa_ctrl, buffer, buffer);
 }
 
-static void
-wpa_ctrl_list(wpa_ctrl_t *wpa_ctrl)
+static int
+wpa_ctrl_find_network(wpa_ctrl_t *wpa_ctrl, char *ssid)
 {
 	char buffer[BUFFER_SIZE], ssid_buffer[BUFFER_SIZE];
 	int id;
 	char *pos = buffer;
 
 	wpa_ctrl_request(wpa_ctrl, "LIST_NETWORKS", buffer);
-	printf("hoi\n");
 	while (pos = strchr(pos+1, '\n')) {
 		if (sscanf(pos+1, "%d", &id) == 1) {
 			snprintf(ssid_buffer, BUFFER_SIZE, "GET_NETWORK %d ssid", id);
 			wpa_ctrl_request(wpa_ctrl, ssid_buffer, ssid_buffer);
+			if (strcmp(ssid, ssid_buffer) == 0){
+				return id;
+			}
 		}
 	}
-
-	printf("%s\n", buffer);
+	return -1;
 }
 
 static int
@@ -299,6 +300,7 @@ wpa_connect_to_network(state_t *state, char *interface, wpa_network_t *network)
 {
 	wpa_ctrl_t wpa_ctrl;
 	char sock_addr[BUFFER_SIZE];
+	int id;
 	if (snprintf(sock_addr, BUFFER_SIZE, "%s/%s", SOCK_PATH, interface) < 0) {
 		eprintf("Failed writing into buffer %s/%s\n", SOCK_PATH, interface);
 		eprintf("Not connecting\n");
@@ -306,7 +308,12 @@ wpa_connect_to_network(state_t *state, char *interface, wpa_network_t *network)
 	}
 
 	if (wpa_ctrl_connect(&wpa_ctrl, sock_addr)) {
-		wpa_ctrl_register(&wpa_ctrl, network);
+		id = wpa_ctrl_find_network(&wpa_ctrl, get_element("ssid", network->options).str);
+		if (id > 0) {
+			network->id = id;
+		} else {
+			wpa_ctrl_register(&wpa_ctrl, network);
+		}
 		wpa_ctrl_enable(&wpa_ctrl, network);
 		wpa_ctrl_handle_messages(state, &wpa_ctrl);
 	} else {
