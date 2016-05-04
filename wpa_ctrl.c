@@ -11,6 +11,8 @@
 #define SOCK_PATH "/var/run/wpa_supplicant"
 #define BUFFER_SIZE 4096
 
+#define SSID_SIZE 33 /* 32 characters plus terminator */
+
 #define PLEVEL_LEN 3
 
 #define TYPES_NUM 18
@@ -171,8 +173,7 @@ wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
 
 	/* receive reply */
 	nbytes = read(wpa_ctrl->socket, buffer, BUFFER_SIZE);
-	/* remove trailing newline */
-	buffer[nbytes-1] = 0;
+	buffer[nbytes] = 0;
 	DEBUG("> %s\n", buffer);
 	strcpy(reply, buffer);
 	return nbytes;
@@ -242,6 +243,25 @@ wpa_ctrl_enable(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 		return;
 	}
 	wpa_ctrl_request(wpa_ctrl, buffer, buffer);
+}
+
+static void
+wpa_ctrl_list(wpa_ctrl_t *wpa_ctrl)
+{
+	char buffer[BUFFER_SIZE], ssid_buffer[BUFFER_SIZE];
+	int id;
+	char *pos = buffer;
+
+	wpa_ctrl_request(wpa_ctrl, "LIST_NETWORKS", buffer);
+	printf("hoi\n");
+	while (pos = strchr(pos+1, '\n')) {
+		if (sscanf(pos+1, "%d", &id) == 1) {
+			snprintf(ssid_buffer, BUFFER_SIZE, "GET_NETWORK %d ssid", id);
+			wpa_ctrl_request(wpa_ctrl, ssid_buffer, ssid_buffer);
+		}
+	}
+
+	printf("%s\n", buffer);
 }
 
 static int
