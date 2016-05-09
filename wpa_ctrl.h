@@ -21,7 +21,7 @@ struct wpa_socket {
 struct wpa_interface {
 	struct wpa_socket control;
 	struct wpa_socket messages;
-	struct wpa_network *active_network;
+	struct wpa_network *current_network;
 	/* map ssids to configured networks */
 	hashtable_t *networks;
 };

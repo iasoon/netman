@@ -290,8 +290,8 @@ static void
 wpa_fetch_networks(wpa_interface_t *iface)
 {
 	char buffer[BUFFER_SIZE];
-	char *id, *ssid, *bssid, *flags;
-	char *quoted_ssid, *start = buffer;
+	char *id, *ssid, *bssid, *flags, *start = buffer;
+	char *quoted_ssid, *end;
 	wpa_network_t *net;
 
 	wpa_request(iface, buffer, "LIST_NETWORKS");
@@ -311,10 +311,20 @@ wpa_fetch_networks(wpa_interface_t *iface)
 		/* TODO: update networks if they already exist */
 		if (*id && *ssid) {
 			net = malloc(sizeof(wpa_network_t));
+			/* TODO: fill properties */
 			net->id = atoi(id);
 			set_str_quote(&quoted_ssid, ssid);
 
-			/* TODO: fill properties */
+			/* process flags */
+			while (*flags){
+				start = strchr(flags, '[') + 1;
+				flags = strchr(flags, ']');
+				*flags++ = '\0';
+				if (strcmp(start, "CURRENT") == 0){
+					iface->current_network = net;
+				}
+			}
+
 			hash_add(iface->networks, quoted_ssid, net);
 		}
 	}
@@ -373,7 +383,7 @@ wpa_interface_init(wpa_interface_t *iface, char *interface)
 
 	memset(&iface->control, 0, sizeof(wpa_socket_t));
 	memset(&iface->messages, 0, sizeof(wpa_socket_t));
-	iface->active_network = 0;
+	iface->current_network = 0;
 	iface->networks = mk_hashtable(64);
 
 	snprintf(sock_addr, BUFFER_SIZE, "%s/%s", SOCK_PATH, interface);
@@ -391,7 +401,7 @@ wpa_connect_to_network(state_t *state, char *interface, keyvalue_t *options)
 	wpa_interface_init(&iface, interface);
 	wpa_network_t *net;
 	net = hash_get_ptr(iface.networks, get_element("ssid", options).str);
-	if (net) {
+	if (net && net == iface.current_network) {
 		printf("lol ok\n");
 	} else {
 		printf("I have to do shit\n");
