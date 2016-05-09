@@ -271,13 +271,18 @@ wpa_configure_network(wpa_interface_t *iface, wpa_network_t *network)
 	}
 }
 
-static void
-wpa_add_network(wpa_interface_t *iface, wpa_network_t *network)
+static wpa_network_t *
+wpa_add_network(wpa_interface_t *iface, keyvalue_t *options)
 {
 	char buffer[BUFFER_SIZE];
+	wpa_network_t *net = malloc(sizeof(wpa_network_t));
+	/* TODO: handle errors */
 	wpa_request(iface, buffer, "ADD_NETWORK");
-	sscanf(buffer, "%d", &network->id);
-	wpa_configure_network(iface, network);
+	sscanf(buffer, "%d", &net->id);
+	net->options = options;
+	wpa_configure_network(iface, net);
+	hash_add(iface->networks, get_element("ssid", options).str, net);
+	return net;
 }
 
 static void
@@ -401,14 +406,18 @@ wpa_connect_to_network(state_t *state, char *interface, keyvalue_t *options)
 	wpa_interface_init(&iface, interface);
 	wpa_network_t *net;
 	net = hash_get_ptr(iface.networks, get_element("ssid", options).str);
-	if (net && net == iface.current_network) {
-		printf("lol ok\n");
+	if (!net){
+		net = wpa_add_network(&iface, options);
 	} else {
-		printf("I have to do shit\n");
+		/* TODO: merge options instead of overwriting? */
+		net->options = options;
+		wpa_configure_network(&iface, net);
 	}
-	/* wpa_enable_network(&iface, network); */
-	/* wpa_handle_messages(state, &iface); */
-	/* wpa_interface_disconnect(&iface); */
+	if (net != iface.current_network){
+		wpa_enable_network(&iface, net);
+		wpa_handle_messages(state, &iface);
+	}
+	wpa_interface_disconnect(&iface);
 }
 
 void
