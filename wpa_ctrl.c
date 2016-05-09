@@ -36,14 +36,14 @@
 #define CR_OTP          16
 #define CR_PASSPHRASE   17
 
-typedef void (*wpa_action_t)(state_t *state, char *params);
+typedef void (*wpa_action_t)(state_t *state, wpa_interface_t *iface, char *params);
 
 static void
 get_nid(char nid[4], char *params)
 {
 	while (*params != '-') {
 		*nid++ = *params++;
-	}	
+	}
 }
 
 /* FIXME: Currently prints to stdout */
@@ -101,7 +101,7 @@ prompt_password(state_t *state, char *params)
 }
 
 static void
-netman_exit(state_t *state, char *params)
+netman_exit(state_t *state, wpa_interface_t *iface, char *params)
 {
 	/* TODO: properly clean up or something */
 	printf("%s\n", params);
@@ -161,18 +161,18 @@ get_param_str(char buffer[BUFFER_SIZE], char params[512], int idx)
 }
 
 static int
-wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
+wpa_ctrl_request(wpa_interface_t *iface, char *command, char *reply)
 {
 	char buffer[BUFFER_SIZE];
 	int nbytes, res;
 
 	strcpy(buffer, command);
 	DEBUG("%s\n", buffer);
-	res = write(wpa_ctrl->socket, buffer, strlen(buffer));
+	res = write(iface->control.socket, buffer, strlen(buffer));
 	if (res < 0) return -1;
 
 	/* receive reply */
-	nbytes = read(wpa_ctrl->socket, buffer, BUFFER_SIZE);
+	nbytes = read(iface->control.socket, buffer, BUFFER_SIZE);
 	buffer[nbytes] = 0;
 	DEBUG("> %s\n", buffer);
 	strcpy(reply, buffer);
@@ -180,7 +180,7 @@ wpa_ctrl_request(wpa_ctrl_t *wpa_ctrl, char *command, char *reply)
 }
 
 static void
-wpa_ctrl_handle_messages(state_t *state, wpa_ctrl_t *wpa_ctrl)
+wpa_handle_messages(state_t *state, wpa_interface_t *iface)
 {
 	char buffer[BUFFER_SIZE];
 	char params[512];
@@ -190,9 +190,9 @@ wpa_ctrl_handle_messages(state_t *state, wpa_ctrl_t *wpa_ctrl)
 	wpa_action_t handles[TYPES_NUM][NETMAN_NUM_STATES] = {0};
 	handles[CE_CON][NETMAN_STATE_CONNECTING] = netman_exit;
 
-	wpa_ctrl_request(wpa_ctrl, "ATTACH", buffer);
+	wpa_ctrl_request(iface, "ATTACH", buffer);
 	for (;;) {
-		nbytes = read(wpa_ctrl->socket, buffer, BUFFER_SIZE);
+		nbytes = read(iface->messages.socket, buffer, BUFFER_SIZE);
 		/* remove trailing newline */
 		buffer[nbytes] = 0;
 		DEBUG("> %s\n", buffer);
@@ -202,13 +202,13 @@ wpa_ctrl_handle_messages(state_t *state, wpa_ctrl_t *wpa_ctrl)
 		handle = handles[idx][state->state];
 		if (handle) {
 			get_param_str(buffer+PLEVEL_LEN, params, idx);
-			handle(state, params);
+			handle(state, iface, params);
 		}
 	}
 }
 
 static void
-wpa_ctrl_configure_network(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
+wpa_configure_network(wpa_interface_t *iface, wpa_network_t *network)
 {
 	char buffer[BUFFER_SIZE];
 	keyvalue_t *kv;
@@ -220,21 +220,21 @@ wpa_ctrl_configure_network(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 			eprintf("Not calling the request\n");
 			return;
 		}
-		wpa_ctrl_request(wpa_ctrl, buffer, buffer);
+		wpa_ctrl_request(iface, buffer, buffer);
 	}
 }
 
 static void
-wpa_ctrl_register(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
+wpa_add_network(wpa_interface_t *iface, wpa_network_t *network)
 {
 	char buffer[BUFFER_SIZE];
-	wpa_ctrl_request(wpa_ctrl, "ADD_NETWORK", buffer);
+	wpa_ctrl_request(iface, "ADD_NETWORK", buffer);
 	sscanf(buffer, "%d", &network->id);
-	wpa_ctrl_configure_network(wpa_ctrl, network);
+	wpa_configure_network(iface, network);
 }
 
 static void
-wpa_ctrl_enable(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
+wpa_enable_network(wpa_interface_t *iface, wpa_network_t *network)
 {
 	char buffer[BUFFER_SIZE];
 	if (snprintf(buffer, BUFFER_SIZE, "ENABLE_NETWORK %d", network->id) < 0) {
@@ -242,21 +242,21 @@ wpa_ctrl_enable(wpa_ctrl_t *wpa_ctrl, wpa_network_t *network)
 		eprintf("Not calling the request\n");
 		return;
 	}
-	wpa_ctrl_request(wpa_ctrl, buffer, buffer);
+	wpa_ctrl_request(iface, buffer, buffer);
 }
 
 static int
-wpa_ctrl_find_network(wpa_ctrl_t *wpa_ctrl, char *ssid)
+wpa_find_network(wpa_interface_t *iface, char *ssid)
 {
 	char buffer[BUFFER_SIZE], ssid_buffer[BUFFER_SIZE];
 	int id;
 	char *pos = buffer;
 
-	wpa_ctrl_request(wpa_ctrl, "LIST_NETWORKS", buffer);
+	wpa_ctrl_request(iface, "LIST_NETWORKS", buffer);
 	while (pos = strchr(pos+1, '\n')) {
 		if (sscanf(pos+1, "%d", &id) == 1) {
 			snprintf(ssid_buffer, BUFFER_SIZE, "GET_NETWORK %d ssid", id);
-			wpa_ctrl_request(wpa_ctrl, ssid_buffer, ssid_buffer);
+			wpa_ctrl_request(iface, ssid_buffer, ssid_buffer);
 			if (strcmp(ssid, ssid_buffer) == 0){
 				return id;
 			}
@@ -266,39 +266,56 @@ wpa_ctrl_find_network(wpa_ctrl_t *wpa_ctrl, char *ssid)
 }
 
 static int
-wpa_ctrl_connect(wpa_ctrl_t *wpa_ctrl, char* socket_addr)
+wpa_socket_connect(wpa_socket_t *sock, char *socket_addr)
 {
 	int ret;
 
-	wpa_ctrl->socket = socket(AF_UNIX, SOCK_DGRAM, 0);
-	if (wpa_ctrl->socket < 0) return 0;
+	sock->socket = socket(AF_UNIX, SOCK_DGRAM, 0);
+	if (sock->socket < 0) return 0;
 
-	wpa_ctrl->local.sun_family = AF_UNIX;
-	snprintf(wpa_ctrl->local.sun_path, sizeof(wpa_ctrl->local.sun_path),
+	sock->local.sun_family = AF_UNIX;
+	snprintf(sock->local.sun_path, sizeof(sock->local.sun_path),
 			"/tmp/netman-%d", getpid());
-	ret = bind(wpa_ctrl->socket, (struct sockaddr*) &wpa_ctrl->local,
+	ret = bind(sock->socket, (struct sockaddr*) &sock->local,
 			sizeof(struct sockaddr_un));
 	if (ret < 0) return 0;
 
-	wpa_ctrl->remote.sun_family = AF_UNIX;
-	strcpy(wpa_ctrl->remote.sun_path, socket_addr);
-	ret = connect(wpa_ctrl->socket, (struct sockaddr*) &wpa_ctrl->remote,
+	sock->remote.sun_family = AF_UNIX;
+	strcpy(sock->remote.sun_path, socket_addr);
+	ret = connect(sock->socket, (struct sockaddr*) &sock->remote,
 			sizeof(struct sockaddr_un));
 	if (ret < 0) return 0;
 	return 1;
 }
 
 static void
-wpa_ctrl_close(wpa_ctrl_t *wpa_ctrl)
+wpa_socket_close(wpa_socket_t *sock)
 {
-	unlink(wpa_ctrl->local.sun_path);
-	close(wpa_ctrl->socket);
+	unlink(sock->local.sun_path);
+	close(sock->socket);
 }
 
+static int
+wpa_interface_connect(wpa_interface_t *iface, char *socket_addr)
+{
+	int ret;
+	if (!wpa_socket_connect(&iface->control, socket_addr))
+		return 0;
+	iface->messages = iface->control; /* for now, only use one socket */
+	return 1;
+}
+
+wpa_interface_disconnect(wpa_interface_t *iface)
+{
+	wpa_socket_close(&iface->control);
+	/* TODO: close messages when they have their own socket*/
+}
+
+/* TODO: eww. */
 void
 wpa_connect_to_network(state_t *state, char *interface, wpa_network_t *network)
 {
-	wpa_ctrl_t wpa_ctrl;
+	wpa_interface_t iface;
 	char sock_addr[BUFFER_SIZE];
 	int id;
 	if (snprintf(sock_addr, BUFFER_SIZE, "%s/%s", SOCK_PATH, interface) < 0) {
@@ -307,15 +324,15 @@ wpa_connect_to_network(state_t *state, char *interface, wpa_network_t *network)
 		return;
 	}
 
-	if (wpa_ctrl_connect(&wpa_ctrl, sock_addr)) {
-		id = wpa_ctrl_find_network(&wpa_ctrl, get_element("ssid", network->options).str);
+	if (wpa_interface_connect(&iface, sock_addr)) {
+		id = wpa_find_network(&iface, get_element("ssid", network->options).str);
 		if (id > 0) {
 			network->id = id;
 		} else {
-			wpa_ctrl_register(&wpa_ctrl, network);
+			wpa_add_network(&iface, network);
 		}
-		wpa_ctrl_enable(&wpa_ctrl, network);
-		wpa_ctrl_handle_messages(state, &wpa_ctrl);
+		wpa_enable_network(&iface, network);
+		wpa_handle_messages(state, &iface);
 	} else {
 		fprintf(stderr, "could not connect to wpa_suplicant\n");
 	}
@@ -324,11 +341,11 @@ wpa_connect_to_network(state_t *state, char *interface, wpa_network_t *network)
 void
 wpa_reconnect_to_network()
 {
-	char reply[BUFFER_SIZE];
-	wpa_ctrl_t wpa_ctrl;
+	/* char reply[BUFFER_SIZE]; */
+	/* wpa_ctrl_t wpa_ctrl; */
 
-	wpa_ctrl_connect(&wpa_ctrl, SOCK_PATH);
-	wpa_ctrl_request(&wpa_ctrl, "REASSOCIATE", reply);
+	/* wpa_ctrl_connect(&wpa_ctrl, SOCK_PATH); */
+	/* wpa_ctrl_request(&wpa_ctrl, "REASSOCIATE", reply); */
 
-	wpa_ctrl_close(&wpa_ctrl);
+	/* wpa_ctrl_close(&wpa_ctrl); */
 }
