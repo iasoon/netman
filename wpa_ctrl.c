@@ -286,23 +286,38 @@ wpa_enable_network(wpa_interface_t *iface, wpa_network_t *network)
 	wpa_command(iface, "ENABLE_NETWORK %d", network->id);
 }
 
-static int
-wpa_find_network(wpa_interface_t *iface, char *ssid)
+static void
+wpa_fetch_networks(wpa_interface_t *iface)
 {
-	char buffer[BUFFER_SIZE], ssid_buffer[BUFFER_SIZE];
-	int id;
-	char *pos = buffer;
+	char buffer[BUFFER_SIZE];
+	char *id, *ssid, *bssid, *flags;
+	char *quoted_ssid, *start = buffer;
+	wpa_network_t *net;
 
 	wpa_request(iface, buffer, "LIST_NETWORKS");
-	while ((pos = strchr(pos+1, '\n'))) {
-		if (sscanf(pos+1, "%d", &id) == 1) {
-			wpa_request(iface, ssid_buffer, "GET_NETWORK %d ssid", id);
-			if (strcmp(ssid, ssid_buffer) == 0){
-				return id;
-			}
+	/* skip header line */
+	start = strchr(buffer, '\n') + 1;
+	while (strchr(start, '\n')) {
+		id = start;
+		ssid = strchr(id, '\t');
+		*ssid++ = '\0';
+		bssid = strchr(ssid, '\t');
+		*bssid++ = '\0';
+		flags = strchr(bssid, '\t');
+		*flags++ = '\0';
+		start = strchr(flags, '\n');
+		*start++ = '\0';
+
+		/* TODO: update networks if they already exist */
+		if (*id && *ssid) {
+			net = malloc(sizeof(wpa_network_t));
+			net->id = atoi(id);
+			set_str_quote(&quoted_ssid, ssid);
+
+			/* TODO: fill properties */
+			hash_add(iface->networks, quoted_ssid, net);
 		}
 	}
-	return -1;
 }
 
 static int
@@ -351,32 +366,39 @@ wpa_interface_disconnect(wpa_interface_t *iface)
 	/* TODO: close messages when they have their own socket*/
 }
 
+static void
+wpa_interface_init(wpa_interface_t *iface, char *interface)
+{
+	char sock_addr[BUFFER_SIZE];
+
+	memset(&iface->control, 0, sizeof(wpa_socket_t));
+	memset(&iface->messages, 0, sizeof(wpa_socket_t));
+	iface->active_network = 0;
+	iface->networks = mk_hashtable(64);
+
+	snprintf(sock_addr, BUFFER_SIZE, "%s/%s", SOCK_PATH, interface);
+	/* TODO: handle errors */
+	wpa_interface_connect(iface, sock_addr);
+	wpa_fetch_networks(iface);
+
+}
+
 /* TODO: eww. */
 void
-wpa_connect_to_network(state_t *state, char *interface, wpa_network_t *network)
+wpa_connect_to_network(state_t *state, char *interface, keyvalue_t *options)
 {
 	wpa_interface_t iface;
-	char sock_addr[BUFFER_SIZE];
-	int id;
-	if (snprintf(sock_addr, BUFFER_SIZE, "%s/%s", SOCK_PATH, interface) < 0) {
-		eprintf("Failed writing into buffer %s/%s\n", SOCK_PATH, interface);
-		eprintf("Not connecting\n");
-		return;
-	}
-
-	if (wpa_interface_connect(&iface, sock_addr)) {
-		id = wpa_find_network(&iface, get_element("ssid", network->options).str);
-		if (id > 0) {
-			network->id = id;
-		} else {
-			wpa_add_network(&iface, network);
-		}
-		wpa_enable_network(&iface, network);
-		wpa_handle_messages(state, &iface);
-		wpa_interface_disconnect(&iface);
+	wpa_interface_init(&iface, interface);
+	wpa_network_t *net;
+	net = hash_get_ptr(iface.networks, get_element("ssid", options).str);
+	if (net) {
+		printf("lol ok\n");
 	} else {
-		fprintf(stderr, "could not connect to wpa_suplicant\n");
+		printf("I have to do shit\n");
 	}
+	/* wpa_enable_network(&iface, network); */
+	/* wpa_handle_messages(state, &iface); */
+	/* wpa_interface_disconnect(&iface); */
 }
 
 void

@@ -47,7 +47,7 @@ struct keyvalue {
 		struct keyvalue *child;
 	} value;
 	struct keyvalue *next;
-	uint8_t type;	
+	uint8_t type;
 };
 
 typedef struct keyvalue keyvalue_t;
