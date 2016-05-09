@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -160,23 +161,55 @@ get_param_str(char buffer[BUFFER_SIZE], char params[512], int idx)
 	strcpy(params, buffer);
 }
 
+/* returns: bytes read */
 static int
-wpa_ctrl_request(wpa_interface_t *iface, char *command, char *reply)
+_wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, va_list args)
 {
 	char buffer[BUFFER_SIZE];
 	int nbytes, res;
 
-	strcpy(buffer, command);
-	DEBUG("%s\n", buffer);
+	if(vsnprintf(buffer, BUFFER_SIZE, fmt, args) < 0)
+	{
+		eprintf("Failed writing to buffer\n");
+		return -1;
+	}
+
+	DEBUG("> %s\n", buffer);
 	res = write(iface->control.socket, buffer, strlen(buffer));
 	if (res < 0) return -1;
 
 	/* receive reply */
-	nbytes = read(iface->control.socket, buffer, BUFFER_SIZE);
-	buffer[nbytes] = 0;
-	DEBUG("> %s\n", buffer);
-	strcpy(reply, buffer);
+	nbytes = read(iface->control.socket, reply, BUFFER_SIZE);
+	reply[nbytes] = 0;
+	DEBUG("%s\n", reply);
 	return nbytes;
+}
+
+static int
+wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, ...)
+{
+	va_list args;
+	int ret;
+	va_start(args, fmt);
+	ret = _wpa_request(iface, reply, fmt, args);
+	va_end(args);
+	return ret;
+}
+
+/* returns: success */
+static int
+wpa_command(const wpa_interface_t *iface, const char *fmt, ...)
+{
+	va_list args;
+	char buffer[BUFFER_SIZE];
+	int ret;
+	va_start(args, fmt);
+	ret = _wpa_request(iface, buffer, fmt, args);
+	va_end(args);
+	if (ret != 0 || strcmp(buffer, "OK\n") != 0){
+		return 0;
+	}
+	return 1;
 }
 
 static void
@@ -187,10 +220,10 @@ wpa_handle_messages(state_t *state, wpa_interface_t *iface)
 	int nbytes, idx = -1;
 	wpa_action_t handle;
 
-	wpa_action_t handles[TYPES_NUM][NETMAN_NUM_STATES] = {0};
+	wpa_action_t handles[TYPES_NUM][NETMAN_NUM_STATES] = {{0}};
 	handles[CE_CON][NETMAN_STATE_CONNECTING] = netman_exit;
 
-	wpa_ctrl_request(iface, "ATTACH", buffer);
+	wpa_command(iface, "ATTACH");
 	for (;;) {
 		nbytes = read(iface->messages.socket, buffer, BUFFER_SIZE);
 		/* remove trailing newline */
@@ -210,17 +243,10 @@ wpa_handle_messages(state_t *state, wpa_interface_t *iface)
 static void
 wpa_configure_network(wpa_interface_t *iface, wpa_network_t *network)
 {
-	char buffer[BUFFER_SIZE];
 	keyvalue_t *kv;
 	for (kv = network->options; kv; kv = kv->next) {
-		if (snprintf(buffer, BUFFER_SIZE, "SET_NETWORK %d %s %s",
-				network->id, kv->key, kv->value.str) < 0) {
-			eprintf("Failed writing into buffer: SET_NETWORK %d %s %s\n",
-					network->id, kv->key, kv->value.str);
-			eprintf("Not calling the request\n");
-			return;
-		}
-		wpa_ctrl_request(iface, buffer, buffer);
+		/* TODO: failure */
+		wpa_command(iface, "SET_NETWORK %d %s %s", network->id, kv->key, kv->value.str);
 	}
 }
 
@@ -228,7 +254,7 @@ static void
 wpa_add_network(wpa_interface_t *iface, wpa_network_t *network)
 {
 	char buffer[BUFFER_SIZE];
-	wpa_ctrl_request(iface, "ADD_NETWORK", buffer);
+	wpa_request(iface, buffer, "ADD_NETWORK");
 	sscanf(buffer, "%d", &network->id);
 	wpa_configure_network(iface, network);
 }
@@ -236,13 +262,7 @@ wpa_add_network(wpa_interface_t *iface, wpa_network_t *network)
 static void
 wpa_enable_network(wpa_interface_t *iface, wpa_network_t *network)
 {
-	char buffer[BUFFER_SIZE];
-	if (snprintf(buffer, BUFFER_SIZE, "ENABLE_NETWORK %d", network->id) < 0) {
-		eprintf("Failed writing into buffer: ENABLE_NETWORK %d\n", network->id);
-		eprintf("Not calling the request\n");
-		return;
-	}
-	wpa_ctrl_request(iface, buffer, buffer);
+	wpa_command(iface, "ENABLE_NETWORK %d", network->id);
 }
 
 static int
@@ -252,11 +272,10 @@ wpa_find_network(wpa_interface_t *iface, char *ssid)
 	int id;
 	char *pos = buffer;
 
-	wpa_ctrl_request(iface, "LIST_NETWORKS", buffer);
-	while (pos = strchr(pos+1, '\n')) {
+	wpa_request(iface, buffer, "LIST_NETWORKS");
+	while ((pos = strchr(pos+1, '\n'))) {
 		if (sscanf(pos+1, "%d", &id) == 1) {
-			snprintf(ssid_buffer, BUFFER_SIZE, "GET_NETWORK %d ssid", id);
-			wpa_ctrl_request(iface, ssid_buffer, ssid_buffer);
+			wpa_request(iface, ssid_buffer, "GET_NETWORK %d ssid", id);
 			if (strcmp(ssid, ssid_buffer) == 0){
 				return id;
 			}
@@ -298,13 +317,13 @@ wpa_socket_close(wpa_socket_t *sock)
 static int
 wpa_interface_connect(wpa_interface_t *iface, char *socket_addr)
 {
-	int ret;
 	if (!wpa_socket_connect(&iface->control, socket_addr))
 		return 0;
 	iface->messages = iface->control; /* for now, only use one socket */
 	return 1;
 }
 
+static void
 wpa_interface_disconnect(wpa_interface_t *iface)
 {
 	wpa_socket_close(&iface->control);
@@ -333,6 +352,7 @@ wpa_connect_to_network(state_t *state, char *interface, wpa_network_t *network)
 		}
 		wpa_enable_network(&iface, network);
 		wpa_handle_messages(state, &iface);
+		wpa_interface_disconnect(&iface);
 	} else {
 		fprintf(stderr, "could not connect to wpa_suplicant\n");
 	}
