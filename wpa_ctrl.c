@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include "util.h"
+#include "netman_config.h"
 #include "wpa_ctrl.h"
 
 #define SOCK_PATH "/var/run/wpa_supplicant"
@@ -162,11 +163,12 @@ get_param_str(char buffer[BUFFER_SIZE], char params[512], int idx)
 }
 
 /* returns: bytes read */
-static int
+static size_t
 _wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, va_list args)
 {
 	char buffer[BUFFER_SIZE];
-	int nbytes, res;
+	size_t nbytes;
+	int res;
 
 	if(vsnprintf(buffer, BUFFER_SIZE, fmt, args) < 0)
 	{
@@ -185,15 +187,34 @@ _wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, va_list
 	return nbytes;
 }
 
-static int
+static size_t
 wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, ...)
 {
 	va_list args;
-	int ret;
+	size_t size;
 	va_start(args, fmt);
-	ret = _wpa_request(iface, reply, fmt, args);
+	size = _wpa_request(iface, reply, fmt, args);
 	va_end(args);
-	return ret;
+	return size;
+}
+
+static keyvalue_t *
+wpa_request_kv(const wpa_interface_t *iface, const char *fmt, ...)
+{
+	va_list args;
+	char buffer[BUFFER_SIZE];
+	size_t size;
+	FILE *handle;
+	keyvalue_t *kv = 0;
+	va_start(args, fmt);
+	size = _wpa_request(iface, buffer, fmt, args);
+	va_end(args);
+	if (size > 0){
+		handle = fmemopen(buffer, size, "r");
+		kv = read_keyvalue(handle);
+		fclose(handle);
+	}
+	return kv;
 }
 
 /* returns: success */
