@@ -50,7 +50,7 @@ get_nid(char nid[4], char *params)
 
 /* FIXME: Currently prints to stdout */
 static void 
-prompt_password(state_t *state, char *params)
+prompt_password(state_t *state, wpa_interface_t *iface, char *params)
 {
 	struct termios tp, save;
 	char buf[BUFFER_SIZE] = "CTRL-RSP-";
@@ -99,7 +99,7 @@ prompt_password(state_t *state, char *params)
 		return;
 	}
 
-	DEBUG("%s\n", buf);
+	DEBUG("%s\n", buf);	
 }
 
 static void
@@ -318,7 +318,7 @@ wpa_fetch_networks(wpa_interface_t *iface)
 			net = malloc(sizeof(wpa_network_t));
 			/* TODO: fill properties */
 			net->id = atoi(id);
-			set_str_quote(&quoted_ssid, ssid);
+			quoted_ssid = strdup(ssid);
 
 			/* process flags */
 			while (*flags){
@@ -403,8 +403,8 @@ void
 wpa_connect_to_network(state_t *state, char *interface, keyvalue_t *options)
 {
 	wpa_interface_t iface;
-	wpa_interface_init(&iface, interface);
 	wpa_network_t *net;
+	wpa_interface_init(&iface, interface);
 	net = hash_get_ptr(iface.networks, get_element("ssid", options).str);
 	if (!net){
 		net = wpa_add_network(&iface, options);

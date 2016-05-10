@@ -53,12 +53,8 @@ struct keyvalue {
 typedef struct keyvalue keyvalue_t;
 typedef struct hashtable hashtable_t;
 
-char **separate_str(char **str, const char *delim, int *sz);
-size_t strlcpy(char *dest, const char *src, size_t size);
-size_t strlcat(char *dest, const char *src, size_t size);
-void set_str(char **dest, const char *src);
-void set_str_quote(char **dest, const char *str);
-void set_stripped(char **dest, char *begin, char *end);
+char *strdup(const char *src);
+char *quote_str(const char *src);
 hashtable_t *mk_hashtable(uint32_t size);
 void free_hashtable(hashtable_t *h);
 void hash_add(hashtable_t *h, const char *key, void *ptr);

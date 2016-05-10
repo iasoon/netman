@@ -1,75 +1,36 @@
 #include "util.h"
 
-void
-set_str(char **dest, const char *src)
+char *
+strdup(const char *src)
 {
-	int src_len;
+	size_t length;
+	char *dest;
 
-	/* Do not copy if the src string is NULL */
-	if (src == NULL) return;
-	src_len = strlen(src);
+	length = strlen(src) + 1;
+	if ((dest = malloc(length)) == NULL)
+		return NULL;
 
-	/* Disallow preallocated buffers */
-	if (*dest != NULL) 
-		free(*dest);
-	
-	/* In case of needed null termination */
-	if ((*dest = malloc(src_len+1)) == NULL) exit(1);	
-
-	if (strcpy(*dest, src) == NULL) {
-		DEBUG("strcpy - set_str NULL\n");
-		/* You get NULL */
-		free(*dest);
-		*dest = NULL;
-	}
+	return memcpy(dest, src, length);
 }
 
-void
-set_str_quote(char **dest, const char *src)
+char *
+quote_str(const char *src)
 {
-	int src_len;
-	int dest_len;
-	char *temp = NULL;
+	size_t length;
+	char *dest;
+
+	length = strlen(src) + 3;
+	if ((dest = malloc(length)) == NULL)
+		return NULL;
+
+	*dest++ = '"';
+	if (memcpy(dest, src, length) == NULL) {
+		free(dest);
+		return NULL;
+	}
+	dest--;
 	
-	/* Do not copy if the src string is NULL */
-	if (src == NULL) return;
-	src_len = strlen(src);
-
-	/* src + " " + null terminator */
-	dest_len = src_len + 3;
-
-	/* No preallocated buffers allowed, function gets too dirty */
-	if (*dest != NULL) {
-		free(*dest);
-	}
-
-	*dest = NULL;
-
-	if ((temp = malloc(dest_len)) == NULL)
-		exit(1);
-
-	if (strcpy(temp, "\"") == NULL) {
-		DEBUG("strcpy - set_str_quote NULL\n");
-		/* You get NULL */
-		free(temp);
-		return;
-	}
-
-	if (strcat(temp, src) == NULL) {
-		DEBUG("strcat - set_str_quote NULL\n");
-		/* You get NULL */
-		free(temp);
-		return;	
-	}
-
-	if (strcat(temp, "\"") == NULL) {
-		DEBUG("strcat - set_str_quote NULL\n");
-		/* You get NULL */
-		free(temp);
-		return;
-	}
-
-	*dest = temp;
+	return	strcat(dest, "\"");
 }
 
 hashtable_t *
@@ -138,10 +99,10 @@ mk_hash_link(const char *key, void *ptr)
 	new->key = NULL;
 	new->ptr = NULL;
 
-	set_str(&new->key, key);
+    new->key = strdup(key);
 
 	if (new->key == NULL) {
-		eprintf("set_str failed\n");
+		eprintf("strdup failed\n");
 		return NULL;
 	}
 
@@ -222,9 +183,9 @@ keyvalue_t *
 mk_keyvalue(char *key, void *ptr, keyvalue_t *next, uint8_t type)
 {
 	keyvalue_t *kv = malloc(sizeof(keyvalue_t));
-	set_str(&kv->key, key);
+    kv->key = strdup(key);
 	if (type == VALUE_STR) {
-		set_str(&kv->value.str, ptr);
+		kv->value.str = strdup(ptr);
 	} else if (type == VALUE_CHILD) {
 		kv->value.child = ptr;
 	} else {

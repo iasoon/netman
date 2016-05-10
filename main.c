@@ -44,7 +44,7 @@ arg_parse(int argc, char *argv[], int *mode, options_t *options)
 	};
 
 	opterr = 0;
-
+	
 	while ((ret_code = getopt_long(argc, argv, "vqc:b:rp:sSn:", 
 					long_options, &opt_idx)) != -1) {
 		DEBUG("ret_code: %d\n", ret_code);
@@ -62,7 +62,7 @@ arg_parse(int argc, char *argv[], int *mode, options_t *options)
 			case 'c':
 				if (*mode == NETMAN_MODE_NOP){
 					*mode = NETMAN_MODE_CONNECT;
-					set_str(&options->network, optarg);
+					options->network = strdup(optarg);
 				}
 				break;
 			/*case 'b':
@@ -78,7 +78,8 @@ arg_parse(int argc, char *argv[], int *mode, options_t *options)
 				}
 				break;
 			case 'p':
-				set_str_quote(&psk_str, optarg);
+				psk_str = quote_str(optarg);
+				DEBUG("%s\n", psk_str);
 				options->wpa_options = mk_keyvalue("psk",
 						psk_str, options->wpa_options, VALUE_STR);
 				free(psk_str);
@@ -89,7 +90,7 @@ arg_parse(int argc, char *argv[], int *mode, options_t *options)
 				}
 				break;
 			case 'n':
-				set_str_quote(&ssid_str, optarg);
+			    ssid_str = quote_str(optarg);
 				options->wpa_options = mk_keyvalue("ssid", 
 						ssid_str, options->wpa_options, VALUE_STR);
 				free(ssid_str);
