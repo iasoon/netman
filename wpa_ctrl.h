@@ -30,6 +30,7 @@ typedef struct wpa_network wpa_network_t;
 typedef struct wpa_socket wpa_socket_t;
 typedef struct wpa_interface wpa_interface_t;
 
+size_t wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, ...);
 void wpa_connect_to_network(state_t *state, char *interface, keyvalue_t *options);
 void wpa_reconnect_to_network();
 

@@ -3,16 +3,21 @@
 
 #include "util.h"
 
-#define NETMAN_MODE_NOP         0
-#define NETMAN_MODE_CONNECT     1
-#define NETMAN_MODE_SCAN        2
-#define NETMAN_MODE_RECONNECT   3
-#define NETMAN_NUM_MODES        4
+enum {
+	NETMAN_MODE_NOP = 0,
+	NETMAN_MODE_CONNECT,
+	NETMAN_MODE_SCAN,
+	NETMAN_MODE_RECONNECT,
+	NETMAN_NUM_MODES
+};
 
-#define NETMAN_STATE_IDLE       0
-#define NETMAN_STATE_CONNECTING 1
-#define NETMAN_STATE_SCANNING   2
-#define NETMAN_NUM_STATES       3
+enum {
+	NETMAN_STATE_IDLE = 0,
+	NETMAN_STATE_CONNECTING,
+	NETMAN_STATE_SCANNING,
+	NETMAN_STATE_PROMPT_PW,
+	NETMAN_NUM_STATES
+};
 
 struct netman_options {
 	char *cfg_path;

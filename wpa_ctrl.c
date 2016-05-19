@@ -6,9 +6,10 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include "util.h"
 #include "netman_config.h"
+#include "util.h"
 #include "wpa_ctrl.h"
+#include "wpa_handlers.h"
 
 #define SOCK_PATH "/var/run/wpa_supplicant"
 #define BUFFER_SIZE 4096
@@ -40,75 +41,6 @@
 
 typedef void (*wpa_action_t)(state_t *state, wpa_interface_t *iface, char *params);
 
-static void
-get_nid(char nid[4], char *params)
-{
-	while (*params != '-') {
-		*nid++ = *params++;
-	}
-}
-
-/* FIXME: Currently prints to stdout */
-static void 
-prompt_password(state_t *state, wpa_interface_t *iface, char *params)
-{
-	struct termios tp, save;
-	char buf[BUFFER_SIZE] = "CTRL-RSP-";
-	char pwd[512];
-	char nid[4] = {0};
-
-	get_nid(nid, params);
-
-	if (tcgetattr(STDIN_FILENO, &tp) == -1) {
-		perror("tcgetattr");
-		return;
-	}	
-
-	save = tp;
-	tp.c_lflag &= ~ECHO;
-
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tp) == -1) {
-		perror("tcsetattr");
-		return;
-	}
-
-	printf("Password: ");
-	fflush(stdout);
-
-	if (fgets(pwd, 512, stdin) == NULL) {
-		eprintf("EOF Error\n");
-		return;
-	}
-
-	if (tcsetattr(STDIN_FILENO, TCSANOW, &save) == -1) {
-		perror("tcsetattr");
-	}
-
-	if (strcat(buf, nid) == NULL) {
-		eprintf("strcat error\n");
-		return;
-	}
-
-	if (strcat(buf, "-") == NULL) {
-		eprintf("strcat error\n");
-		return;
-	}
-
-	if (strcat(buf, pwd) == NULL) {
-		eprintf("strcat error\n");
-		return;
-	}
-
-	DEBUG("%s\n", buf);	
-}
-
-static void
-netman_exit(state_t *state, wpa_interface_t *iface, char *params)
-{
-	/* TODO: properly clean up or something */
-	printf("%s\n", params);
-	exit(0);
-}
 
 static char types[TYPES_NUM][128] = {
 	[CE_CON]           = "CTRL-EVENT-CONNECTED",
@@ -187,7 +119,7 @@ _wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, va_list
 	return nbytes;
 }
 
-static size_t
+size_t
 wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, ...)
 {
 	va_list args;
@@ -240,18 +172,26 @@ wpa_handle_messages(state_t *state, wpa_interface_t *iface)
 	char params[512];
 	int nbytes, idx = -1;
 	wpa_action_t handle;
-
+	
 	wpa_action_t handles[TYPES_NUM][NETMAN_NUM_STATES] = {{0}};
 	handles[CE_CON][NETMAN_STATE_CONNECTING] = netman_exit;
-
+	handles[CE_CON][NETMAN_STATE_PROMPT_PW] = prompt_password;
+	
 	wpa_command(iface, "ATTACH");
+	/* TODO: The CTRL-REQ doesn't work, so the handler for prompt_password doesn't get called
+	 * specifically, the problem is that the socket waits for a frame it never gets
+	 */
 	for (;;) {
+		DEBUG("HI_ONE\n");
 		nbytes = read(iface->messages.socket, buffer, BUFFER_SIZE);
+		DEBUG("HI_TWO\n");
 		/* remove trailing newline */
 		buffer[nbytes] = 0;
 		DEBUG("> %s\n", buffer);
 		if (buffer[0] != '<') continue;
 		idx = get_type(buffer+PLEVEL_LEN);
+		DEBUG("Calling a handle with idx: %d and state: %d\n", idx, state->state);
+
 		if (idx < 0) continue;
 		handle = handles[idx][state->state];
 		if (handle) {

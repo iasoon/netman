@@ -117,7 +117,7 @@ hash(hashtable_t *h, const char *key)
 	uint32_t val = 0;
 	uint32_t i = 0;
 
-	while (val < ULONG_MAX && i < strlen(key)) {
+	while (i < strlen(key)) {
 		val <<= 8;
 		val += key[i];
 		i++;	

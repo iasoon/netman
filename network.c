@@ -30,8 +30,14 @@ netman_connect(state_t *state)
 	char *iface = get_element("interface", network_config).str;
 	keyvalue_t *wpa_config = get_element("wireless", network_config).child;
 
-	state->state = NETMAN_STATE_CONNECTING;
+	if (get_element("psk", wpa_config).str != NULL) { 
+		state->state = NETMAN_STATE_CONNECTING;
+	} else {
+		state->state = NETMAN_STATE_PROMPT_PW;
+	}
 
+	DEBUG("state: %d", state->state);
+	
 	if (wpa_config != NULL) {
 		wpa_connect_to_network(state, iface, wpa_config);
 	} else {
