@@ -47,7 +47,6 @@ prompt_password(state_t *state, wpa_interface_t *iface, char *params)
 		perror("tcsetattr");
 	}
 
-	state->state = NETMAN_STATE_CONNECTING;
 	pwd[strlen(pwd)-1] = '\0';
 	wpa_request(iface, buf, "CTRL-RSP-PASSWORD-%s:%s", nid, pwd); 
 }

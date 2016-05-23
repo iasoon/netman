@@ -176,7 +176,7 @@ wpa_handle_messages(state_t *state, wpa_interface_t *iface)
 	
 	wpa_action_t handles[TYPES_NUM][NETMAN_NUM_STATES] = {{0}};
 	handles[CE_CON][NETMAN_STATE_CONNECTING] = netman_exit;
-	handles[CR_PASS][NETMAN_STATE_PROMPT_PW] = prompt_password;
+	handles[CR_PASS][NETMAN_STATE_CONNECTING] = prompt_password;
 	
 	wpa_command(iface, "ATTACH");
 	for (;;) {
