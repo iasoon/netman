@@ -18,26 +18,27 @@
 
 #define PLEVEL_LEN 3
 
-#define TYPES_NUM 18
-
-#define CE_CON           0
-#define CE_DCON          1
-#define CE_TERM          2
-#define CE_PASS_CHANGED  3
-#define CE_EAP_NOTIF     4
-#define CE_EAP_START     5
-#define CE_EAP_METHOD    6
-#define CE_EAP_SUCCESS   7
-#define CE_EAP_FAIL      8
-#define CE_SCAN_RES      9
-#define CE_BSS_ADD      10
-#define CE_BSS_RM       11
-#define CR_ID           12
-#define CR_PASS         13
-#define CR_NEW_PASS     14
-#define CR_PIN          15
-#define CR_OTP          16
-#define CR_PASSPHRASE   17
+enum {
+	CE_CON = 0,
+	CE_DCON,
+	CE_TERM,
+	CE_PASS_CHANGED,
+	CE_EAP_NOTIF,
+	CE_EAP_START,
+	CE_EAP_METHOD,
+	CE_EAP_SUCCESS,
+	CE_EAP_FAIL,
+	CE_SCAN_RES,
+	CE_BSS_ADD,
+	CE_BSS_RM,
+	CR_ID,
+	CR_PASS,
+	CR_NEW_PASS,
+	CR_PIN,
+	CR_OTP,
+	CR_PASSPHRASE,
+	TYPES_NUM,
+};
 
 typedef void (*wpa_action_t)(state_t *state, wpa_interface_t *iface, char *params);
 
@@ -175,24 +176,19 @@ wpa_handle_messages(state_t *state, wpa_interface_t *iface)
 	
 	wpa_action_t handles[TYPES_NUM][NETMAN_NUM_STATES] = {{0}};
 	handles[CE_CON][NETMAN_STATE_CONNECTING] = netman_exit;
-	handles[CE_CON][NETMAN_STATE_PROMPT_PW] = prompt_password;
+	handles[CR_PASS][NETMAN_STATE_PROMPT_PW] = prompt_password;
 	
 	wpa_command(iface, "ATTACH");
-	/* TODO: The CTRL-REQ doesn't work, so the handler for prompt_password doesn't get called
-	 * specifically, the problem is that the socket waits for a frame it never gets
-	 */
 	for (;;) {
-		DEBUG("HI_ONE\n");
 		nbytes = read(iface->messages.socket, buffer, BUFFER_SIZE);
-		DEBUG("HI_TWO\n");
 		/* remove trailing newline */
 		buffer[nbytes] = 0;
 		DEBUG("> %s\n", buffer);
 		if (buffer[0] != '<') continue;
 		idx = get_type(buffer+PLEVEL_LEN);
-		DEBUG("Calling a handle with idx: %d and state: %d\n", idx, state->state);
 
 		if (idx < 0) continue;
+		
 		handle = handles[idx][state->state];
 		if (handle) {
 			get_param_str(buffer+PLEVEL_LEN, params, idx);

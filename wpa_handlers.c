@@ -5,7 +5,7 @@
 static void
 get_nid(char nid[4], char *params)
 {
-	while (*params != '-') {
+	while (*params != ':') {
 		*nid++ = *params++;
 	}
 }
@@ -19,7 +19,7 @@ prompt_password(state_t *state, wpa_interface_t *iface, char *params)
 	char buf[BUFFER_SIZE];
 	char pwd[512];
 	char nid[4] = {0};
-	
+
 	get_nid(nid, params);
 
 	if (tcgetattr(STDIN_FILENO, &tp) == -1) {
@@ -48,10 +48,8 @@ prompt_password(state_t *state, wpa_interface_t *iface, char *params)
 	}
 
 	state->state = NETMAN_STATE_CONNECTING;
-	
-	wpa_request(iface, buf, "CTRL-RSP-PASSWORD-%s-%s", nid, pwd); 
-
-	DEBUG("%s\n", buf);	
+	pwd[strlen(pwd)-1] = '\0';
+	wpa_request(iface, buf, "CTRL-RSP-PASSWORD-%s:%s", nid, pwd); 
 }
 
 void
