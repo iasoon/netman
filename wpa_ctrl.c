@@ -103,8 +103,7 @@ _wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, va_list
 	size_t nbytes;
 	int res;
 
-	if(vsnprintf(buffer, BUFFER_SIZE, fmt, args) < 0)
-	{
+	if(vsnprintf(buffer, BUFFER_SIZE, fmt, args) < 0) {
 		eprintf("Failed writing to buffer\n");
 		return -1;
 	}
@@ -160,7 +159,7 @@ wpa_command(const wpa_interface_t *iface, const char *fmt, ...)
 	va_start(args, fmt);
 	ret = _wpa_request(iface, buffer, fmt, args);
 	va_end(args);
-	if (ret != 0 || strcmp(buffer, "OK\n") != 0){
+	if (ret != 0 || strcmp(buffer, "OK\n") != 0) {
 		return 0;
 	}
 	return 1;
@@ -257,7 +256,7 @@ wpa_fetch_networks(wpa_interface_t *iface)
 			quoted_ssid = strdup(ssid);
 
 			/* process flags */
-			while (*flags){
+			while (*flags) {
 				start = strchr(flags, '[') + 1;
 				flags = strchr(flags, ']');
 				*flags++ = '\0';
@@ -342,7 +341,7 @@ wpa_connect_to_network(state_t *state, char *interface, keyvalue_t *options)
 	wpa_network_t *net;
 	wpa_interface_init(&iface, interface);
 	net = hash_get_ptr(iface.networks, get_element("ssid", options).str);
-	if (!net){
+	if (!net) {
 		net = wpa_add_network(&iface, options);
 	} else {
 		/* TODO: merge options instead of overwriting? */

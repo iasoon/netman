@@ -46,8 +46,7 @@ arg_parse(int argc, char *argv[], int *mode, options_t *options)
 	opterr = 0;
 	
 	while ((ret_code = getopt_long(argc, argv, "vqc:b:rp:sSn:", 
-					long_options, &opt_idx)) != -1) {
-		DEBUG("ret_code: %d\n", ret_code);
+	        long_options, &opt_idx)) != -1) {
 		switch (ret_code) {
 			case 0:
 				break;
@@ -81,7 +80,7 @@ arg_parse(int argc, char *argv[], int *mode, options_t *options)
 				psk_str = quote_str(optarg);
 				DEBUG("%s\n", psk_str);
 				options->wpa_options = mk_keyvalue("psk",
-						psk_str, options->wpa_options, VALUE_STR);
+				         psk_str, options->wpa_options, VALUE_STR);
 				free(psk_str);
 				break;
 			case 's':
@@ -90,9 +89,9 @@ arg_parse(int argc, char *argv[], int *mode, options_t *options)
 				}
 				break;
 			case 'n':
-			    ssid_str = quote_str(optarg);
+				ssid_str = quote_str(optarg);
 				options->wpa_options = mk_keyvalue("ssid", 
-						ssid_str, options->wpa_options, VALUE_STR);
+				         ssid_str, options->wpa_options, VALUE_STR);
 				free(ssid_str);
 				break;
 			default:

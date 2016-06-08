@@ -99,7 +99,7 @@ read_keyvalue(FILE *file)
 				/* value is nested k/v; descend a level */
 				kv->type = VALUE_CHILD;
 				depth++;
-			}  else {
+			} else {
 				/* value is a string */
 				kv->type = VALUE_STR;
 				num = read_until(buffer, "\n", file);

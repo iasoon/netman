@@ -24,9 +24,9 @@ void
 netman_connect(state_t *state)
 {
 	keyvalue_t *network_config = get_element(
-			state->options.network,
-			state->config
-		).child;
+	            state->options.network,
+	            state->config).child;
+
 	char *iface = get_element("interface", network_config).str;
 	keyvalue_t *wpa_config = get_element("wireless", network_config).child;
 

@@ -26,16 +26,16 @@ struct netman_options {
 	int no_save;
 	int verbose;
 	int quiet;
-    keyvalue_t *config;
+	keyvalue_t *config;
 };
 
 typedef struct netman_options options_t;
 
 struct netman_state {
-    int state;
-    int mode;
-    options_t options;
-    keyvalue_t *config;
+	int state;
+	int mode;
+	options_t options;
+	keyvalue_t *config;
 };
 
 typedef struct netman_state state_t;

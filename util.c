@@ -99,7 +99,7 @@ mk_hash_link(const char *key, void *ptr)
 	new->key = NULL;
 	new->ptr = NULL;
 
-    new->key = strdup(key);
+	new->key = strdup(key);
 
 	if (new->key == NULL) {
 		eprintf("strdup failed\n");
@@ -183,7 +183,7 @@ keyvalue_t *
 mk_keyvalue(char *key, void *ptr, keyvalue_t *next, uint8_t type)
 {
 	keyvalue_t *kv = malloc(sizeof(keyvalue_t));
-    kv->key = strdup(key);
+	kv->key = strdup(key);
 	if (type == VALUE_STR) {
 		kv->value.str = strdup(ptr);
 	} else if (type == VALUE_CHILD) {
