@@ -137,20 +137,32 @@ if_reenable()
 		 * - dormant
 		 * - up
 		 */
+
+		/* The problem:
+		 * All the UNIX systems keep AF_LINK as the sa_family
+		 * Linux keeps AF_PACKET.
+		*/
+#ifdef __linux__
 		if (addr->ifa_addr && 
-				addr->ifa_addr->sa_family == AF_PACKET &&
-				strcmp(addr->ifa_name, "lo") != 0 &&
-				if_check_link(addr->ifa_name) != 0) {
+		    addr->ifa_addr->sa_family == AF_PACKET &&
+		    strcmp(addr->ifa_name, "lo") != 0 &&
+		    if_check_link(addr->ifa_name) != 0) {
+#else /* !__linux__ */
+		if (addr->ifa_addr &&
+		    addr->ifa_addr->sa_family == AF_LINK &&
+		    strcmp(addr->ifa_name, "lo") != 0 &&
+		    if_check_link(addr->ifa_name) != 0) {
+#endif /* __linux__ */
 
 			if (if_down(addr->ifa_name) == 0) {
 				eprintf("Failed to put the interface down: %s\n", 
-						addr->ifa_name);
+				         addr->ifa_name);
 				return 0;
 			}
 
 			if (if_up(addr->ifa_name) == 0) {
 				eprintf("Failed to put the interface up: %s\n",
-						addr->ifa_name);
+				         addr->ifa_name);
 				return 0;
 			}
 		}
