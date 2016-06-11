@@ -24,7 +24,7 @@ prompt_password(STATE *state, WPA_INTERFACE *iface, char *params)
 	if (tcgetattr(STDIN_FILENO, &tp) == -1) {
 		perror("tcgetattr");
 		return;
-	}	
+	}
 
 	save = tp;
 	tp.c_lflag &= ~ECHO;
@@ -47,7 +47,7 @@ prompt_password(STATE *state, WPA_INTERFACE *iface, char *params)
 	}
 
 	pwd[strlen(pwd)-1] = '\0';
-	wpa_request(iface, buf, "CTRL-RSP-PASSWORD-%s:%s", nid, pwd); 
+	wpa_request(iface, buf, "CTRL-RSP-PASSWORD-%s:%s", nid, pwd);
 }
 
 void

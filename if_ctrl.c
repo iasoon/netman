@@ -84,7 +84,7 @@ if_check_link(char *iface)
 	if_ctrl_disconnect_socket(&if_ctrl);
 
 	return (if_ctrl.if_req.ifr_flags & IFF_UP) &&
-		(if_ctrl.if_req.ifr_flags & IFF_RUNNING);
+	    (if_ctrl.if_req.ifr_flags & IFF_RUNNING);
 }
 
 
@@ -157,13 +157,13 @@ if_reenable()
 
 			if (if_down(addr->ifa_name) == 0) {
 				eprintf("Failed to put the interface down: %s\n", 
-				         addr->ifa_name);
+				    addr->ifa_name);
 				return 0;
 			}
 
 			if (if_up(addr->ifa_name) == 0) {
 				eprintf("Failed to put the interface up: %s\n",
-				         addr->ifa_name);
+				    addr->ifa_name);
 				return 0;
 			}
 		}

@@ -280,15 +280,15 @@ wpa_socket_connect(WPA_SOCKET *sock, char *socket_addr)
 
 	sock->local.sun_family = AF_UNIX;
 	snprintf(sock->local.sun_path, sizeof(sock->local.sun_path),
-			"/tmp/netman-%d", getpid());
+	    "/tmp/netman-%d", getpid());
 	ret = bind(sock->socket, (struct sockaddr*) &sock->local,
-			sizeof(struct sockaddr_un));
+	    sizeof(struct sockaddr_un));
 	if (ret < 0) return 0;
 
 	sock->remote.sun_family = AF_UNIX;
 	strcpy(sock->remote.sun_path, socket_addr);
 	ret = connect(sock->socket, (struct sockaddr*) &sock->remote,
-			sizeof(struct sockaddr_un));
+	    sizeof(struct sockaddr_un));
 	if (ret < 0) return 0;
 	return 1;
 }
@@ -303,7 +303,7 @@ wpa_socket_close(WPA_SOCKET *sock)
 static int
 wpa_interface_connect(WPA_INTERFACE *iface, char *socket_addr)
 {
-	if (!wpa_socket_connect(&iface->control, socket_addr))
+	if (wpa_socket_connect(&iface->control, socket_addr) == 0)
 		return 0;
 	iface->messages = iface->control; /* for now, only use one socket */
 	return 1;
@@ -341,7 +341,7 @@ wpa_connect_to_network(STATE *state, char *interface, KEYVALUE *options)
 	WPA_NETWORK *net;
 	wpa_interface_init(&iface, interface);
 	net = hash_get_ptr(iface.networks, get_element("ssid", options).str);
-	if (!net) {
+	if (net == 0) {
 		net = wpa_add_network(&iface, options);
 	} else {
 		/* TODO: merge options instead of overwriting? */

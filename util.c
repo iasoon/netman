@@ -30,7 +30,7 @@ quote_str(const char *src)
 	}
 	dest--;
 	
-	return	strcat(dest, "\"");
+	return strcat(dest, "\"");
 }
 
 HASHTABLE *
@@ -120,7 +120,7 @@ hash(HASHTABLE *h, const char *key)
 	while (i < strlen(key)) {
 		val <<= 8;
 		val += key[i];
-		i++;	
+		i++;
 	}
 
 	return val % h->size;
@@ -138,13 +138,13 @@ hash_add(HASHTABLE *h, const char *key, void *ptr)
 	next = h->table[bin];
 
 	while (next != NULL && next->key != NULL &&
-			strcmp(key, next->key) > 0) {
+	    strcmp(key, next->key) > 0) {
 		last = next;
 		next = next->next;
 	}
 
 	if (next != NULL && next->key != NULL &&
-			strcmp(key, next->key) == 0) {
+	    strcmp(key, next->key) == 0) {
 		next->ptr = ptr;
 	} else {
 		new = mk_hash_link(key, ptr);
@@ -202,7 +202,7 @@ union _vc
 get_element(const char *key, KEYVALUE *root)
 {
 	static union _vc null = {
-		.str = NULL
+	    .str = NULL
 	};
 
 	while (root) {
@@ -210,7 +210,7 @@ get_element(const char *key, KEYVALUE *root)
 			return root->value;
 
 		root = root->next;
-	}	
+	}
 
 	return null;
 }

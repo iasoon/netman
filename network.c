@@ -45,7 +45,7 @@ void
 netman_reconnect(OPTIONS *options)
 {
 	DEBUG("TODO: %s\n", options->network);
-	if_reenable();	
+	if_reenable();
 }
 
 /* TODO: Implement blacklisting with wpa_supplicant - builtin

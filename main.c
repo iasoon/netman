@@ -32,70 +32,70 @@ arg_parse(int argc, char *argv[], int *mode, OPTIONS *options)
 	char *psk_str = NULL;
 
 	struct option long_options[] = {
-		{ "no-save",       no_argument,       &options->no_save,       0  },
-		{ "verbose",       no_argument,       0,                      'v' },
-		{ "quiet",         no_argument,       0,                      'q' },
-		{ "connect",       required_argument, 0,                      'c' },
-		{ "blacklist",     required_argument, 0,                      'b' },
-		{ "reconnect",     no_argument,       0,                      'r' },
-		{ "passphrase",    required_argument, 0,                      'p' },
-		{ "scan",          no_argument,       0,                      's' },
-		{ "ssid",          required_argument, 0,                      'n' },
+	    { "no-save",       no_argument,       &options->no_save,       0  },
+	    { "verbose",       no_argument,       0,                      'v' },
+	    { "quiet",         no_argument,       0,                      'q' },
+	    { "connect",       required_argument, 0,                      'c' },
+	    { "blacklist",     required_argument, 0,                      'b' },
+	    { "reconnect",     no_argument,       0,                      'r' },
+	    { "passphrase",    required_argument, 0,                      'p' },
+	    { "scan",          no_argument,       0,                      's' },
+	    { "ssid",          required_argument, 0,                      'n' },
 	};
 
 	opterr = 0;
 	
-	while ((ret_code = getopt_long(argc, argv, "vqc:b:rp:sSn:", 
+	while ((ret_code = getopt_long(argc, argv, "vqc:b:rp:sSn:",
 	        long_options, &opt_idx)) != -1) {
 		switch (ret_code) {
-			case 0:
-				break;
-			case 'v':
-				if (options->quiet == 0)
-					options->verbose = 1;
-				break;
-			case 'q':
-				if (options->verbose == 0)
-					options->quiet = 1;
-				break;
-			case 'c':
-				if (*mode == NETMAN_MODE_NOP){
-					*mode = NETMAN_MODE_CONNECT;
-					options->network = strdup(optarg);
-				}
-				break;
-			/*case 'b':
-				if (*mode == NETMAN_MODE_NOP) {
-					config->cmd = netman_blacklist;
-					set_str(&config->opts->name, optarg);
-					DEBUG("Blacklist %s\n", config->opts->name);
-				}
-				break; */
-			case 'r':
-				if (*mode == NETMAN_MODE_NOP) {
-					*mode = NETMAN_MODE_RECONNECT;
-				}
-				break;
-			case 'p':
-				psk_str = quote_str(optarg);
-				DEBUG("%s\n", psk_str);
-				options->wpa_options = mk_keyvalue("psk",
-				         psk_str, options->wpa_options, VALUE_STR);
-				free(psk_str);
-				break;
-			case 's':
-				if (*mode == NETMAN_MODE_NOP) {
-					*mode = NETMAN_MODE_SCAN;
-				}
-				break;
-			case 'n':
-				ssid_str = quote_str(optarg);
-				options->wpa_options = mk_keyvalue("ssid", 
-				         ssid_str, options->wpa_options, VALUE_STR);
-				free(ssid_str);
-				break;
-			default:
-				eprintf("Sumting wong\n");
+		case 0:
+			break;
+		case 'v':
+			if (options->quiet == 0)
+				options->verbose = 1;
+			break;
+		case 'q':
+			if (options->verbose == 0)
+				options->quiet = 1;
+			break;
+		case 'c':
+			if (*mode == NETMAN_MODE_NOP){
+				*mode = NETMAN_MODE_CONNECT;
+				options->network = strdup(optarg);
+			}
+			break;
+		/*case 'b':
+			if (*mode == NETMAN_MODE_NOP) {
+				config->cmd = netman_blacklist;
+				set_str(&config->opts->name, optarg);
+				DEBUG("Blacklist %s\n", config->opts->name);
+			}
+			break; */
+		case 'r':
+			if (*mode == NETMAN_MODE_NOP) {
+				*mode = NETMAN_MODE_RECONNECT;
+			}
+			break;
+		case 'p':
+			psk_str = quote_str(optarg);
+			DEBUG("%s\n", psk_str);
+			options->wpa_options = mk_keyvalue("psk",
+			         psk_str, options->wpa_options, VALUE_STR);
+			free(psk_str);
+			break;
+		case 's':
+			if (*mode == NETMAN_MODE_NOP) {
+				*mode = NETMAN_MODE_SCAN;
+			}
+			break;
+		case 'n':
+			ssid_str = quote_str(optarg);
+			options->wpa_options = mk_keyvalue("ssid",
+			         ssid_str, options->wpa_options, VALUE_STR);
+			free(ssid_str);
+			break;
+		default:
+			eprintf("Sumting wong\n");
 		}
 	}
 	return 0;

@@ -20,7 +20,7 @@ read_until(char *dest, char *delims, FILE *file)
 	for (;;) {
 		for (d = delims; *d != '\0'; d++)
 			if (*c == *d) return c - dest;
-		if (!read(c+1, file)) return c - dest;
+		if (read(c+1, file) == 0) return c - dest;
 		c++;
 	}
 }
@@ -32,7 +32,7 @@ skip(char *c, char *delims, FILE *file)
 	for (;;) {
 		for (d = delims; *d != '\0' && *c != *d; d++);
 		if (*d == '\0') return;
-		if (!read(c, file)) return;
+		if (read(c, file) == 0) return;
 	}
 }
 
@@ -117,7 +117,7 @@ write_keyvalue(FILE *file, KEYVALUE *root){
 	int i, depth = 0;
 	pos[0] = root;
 	while (pos[0]) {
-		if (!pos[depth]) {
+		if (pos[depth] == NULL) {
 			pos[depth] = 0;
 			depth--;
 			pos[depth] = pos[depth]->next;
@@ -143,7 +143,7 @@ KEYVALUE *
 netman_get_config()
 {
 	FILE *conf_file = fopen(NETMAN_CONFIG_LOCATION, "r");
-	if (!conf_file) {
+	if (conf_file == NULL) {
 		DEBUG("couldn't open config file\n");
 		return NULL;
 	}
