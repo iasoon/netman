@@ -8,7 +8,7 @@
 #include <net/if.h>
 #ifdef __linux__
 #define __USE_MISC
-#endif
+#endif /* __linux__ */
 #include <netinet/in.h>
 
 #include <errno.h>
