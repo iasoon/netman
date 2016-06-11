@@ -33,17 +33,17 @@ quote_str(const char *src)
 	return	strcat(dest, "\"");
 }
 
-hashtable_t *
+HASHTABLE *
 mk_hashtable(uint32_t size)
 {
-	hashtable_t *h = NULL;
+	HASHTABLE *h = NULL;
 
 	if (size < 1) {
 		eprintf("Size cannot be lesser than 1\n");
 		return NULL;
 	}
 
-	if ((h = malloc(sizeof(hashtable_t))) == NULL) {
+	if ((h = malloc(sizeof(HASHTABLE))) == NULL) {
 		eprintf("Malloc failed\n");
 		return NULL;
 	}
@@ -59,7 +59,7 @@ mk_hashtable(uint32_t size)
 }
 
 void
-free_hashtable(hashtable_t *h)
+free_hashtable(HASHTABLE *h)
 {
 	uint32_t i;
 	struct hash_link *tmp = NULL;
@@ -112,7 +112,7 @@ mk_hash_link(const char *key, void *ptr)
 }
 
 static int
-hash(hashtable_t *h, const char *key)
+hash(HASHTABLE *h, const char *key)
 {
 	uint32_t val = 0;
 	uint32_t i = 0;
@@ -127,7 +127,7 @@ hash(hashtable_t *h, const char *key)
 }
 
 void
-hash_add(hashtable_t *h, const char *key, void *ptr)
+hash_add(HASHTABLE *h, const char *key, void *ptr)
 {
 	uint32_t bin = 0;
 	struct hash_link *new = NULL;
@@ -162,7 +162,7 @@ hash_add(hashtable_t *h, const char *key, void *ptr)
 }
 
 void *
-hash_get_ptr(hashtable_t *h, const char *key)
+hash_get_ptr(HASHTABLE *h, const char *key)
 {
 	uint32_t bin = 0;
 	struct hash_link *pair;
@@ -179,10 +179,10 @@ hash_get_ptr(hashtable_t *h, const char *key)
 		return pair->ptr;
 }
 
-keyvalue_t *
-mk_keyvalue(char *key, void *ptr, keyvalue_t *next, uint8_t type)
+KEYVALUE *
+mk_keyvalue(char *key, void *ptr, KEYVALUE *next, uint8_t type)
 {
-	keyvalue_t *kv = malloc(sizeof(keyvalue_t));
+	KEYVALUE *kv = malloc(sizeof(KEYVALUE));
 	kv->key = strdup(key);
 	if (type == VALUE_STR) {
 		kv->value.str = strdup(ptr);
@@ -199,7 +199,7 @@ mk_keyvalue(char *key, void *ptr, keyvalue_t *next, uint8_t type)
 }
 
 union _vc
-get_element(const char *key, keyvalue_t *root)
+get_element(const char *key, KEYVALUE *root)
 {
 	static union _vc null = {
 		.str = NULL
@@ -216,7 +216,7 @@ get_element(const char *key, keyvalue_t *root)
 }
 
 void
-free_kv(keyvalue_t *root)
+free_kv(KEYVALUE *root)
 {
 	if (root == NULL) return;
 	if (root->key) free(root->key);

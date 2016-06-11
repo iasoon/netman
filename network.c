@@ -21,14 +21,14 @@
  *    }
  */
 void
-netman_connect(state_t *state)
+netman_connect(STATE *state)
 {
-	keyvalue_t *network_config = get_element(
+	KEYVALUE *network_config = get_element(
 	            state->options.network,
 	            state->config).child;
 
 	char *iface = get_element("interface", network_config).str;
-	keyvalue_t *wpa_config = get_element("wireless", network_config).child;
+	KEYVALUE *wpa_config = get_element("wireless", network_config).child;
 
 	state->state = NETMAN_STATE_CONNECTING;
 	
@@ -42,7 +42,7 @@ netman_connect(state_t *state)
 }
 
 void
-netman_reconnect(options_t *options)
+netman_reconnect(OPTIONS *options)
 {
 	DEBUG("TODO: %s\n", options->network);
 	if_reenable();	
@@ -53,19 +53,19 @@ netman_reconnect(options_t *options)
  * Config entry?
  */
 void
-netman_blacklist(options_t *options)
+netman_blacklist(OPTIONS *options)
 {
 	DEBUG("TODO: %s\n", options->network);
 }
 
 void
-netman_scan(options_t *options)
+netman_scan(OPTIONS *options)
 {
 	DEBUG("TODO: %s\n", options->network);
 }
 
 void
-netman_scan_networks(options_t *options)
+netman_scan_networks(OPTIONS *options)
 {
 	DEBUG("TODO: %s\n", options->network);
 }

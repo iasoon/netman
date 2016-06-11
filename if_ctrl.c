@@ -1,11 +1,11 @@
 #include "if_ctrl.h"
 
-static if_ctrl_t default_if_ctrl = {
+static IF_CTRL default_if_ctrl = {
 	.socket = -1,
 };
 
 static int
-if_ctrl_connect_socket(if_ctrl_t *if_ctrl)
+if_ctrl_connect_socket(IF_CTRL *if_ctrl)
 {
 	if_ctrl->socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
 	if (if_ctrl->socket < 0) {
@@ -17,7 +17,7 @@ if_ctrl_connect_socket(if_ctrl_t *if_ctrl)
 }
 
 static int
-if_ctrl_disconnect_socket(if_ctrl_t *if_ctrl)
+if_ctrl_disconnect_socket(IF_CTRL *if_ctrl)
 {
 	if_ctrl->socket = close(if_ctrl->socket);
 	if (if_ctrl->socket < 0) {
@@ -29,7 +29,7 @@ if_ctrl_disconnect_socket(if_ctrl_t *if_ctrl)
 }
 
 static int
-if_ctrl_set_flags(if_ctrl_t *if_ctrl, int val)
+if_ctrl_set_flags(IF_CTRL *if_ctrl, int val)
 {
 	int ret_val = -1;
 	int flags = 0;
@@ -65,7 +65,7 @@ static int
 if_check_link(char *iface)
 {
 	int ret_val = -1;
-	if_ctrl_t if_ctrl = default_if_ctrl;
+	IF_CTRL if_ctrl = default_if_ctrl;
 	if_ctrl_connect_socket(&if_ctrl);
 
 	if (strcpy(if_ctrl.if_req.ifr_name, iface) == NULL) {
@@ -90,7 +90,7 @@ if_check_link(char *iface)
 static int
 if_toggle(char *iface, int val)
 {
-	if_ctrl_t if_ctrl = default_if_ctrl;
+	IF_CTRL if_ctrl = default_if_ctrl;
 	if_ctrl_connect_socket(&if_ctrl);
 
 	if (strcpy(if_ctrl.if_req.ifr_name, iface) == NULL) {

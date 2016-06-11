@@ -22,22 +22,22 @@ struct netman_options {
 	char *cfg_path;
 	char *network;
 	char *interface;
-	keyvalue_t *wpa_options;
+	KEYVALUE *wpa_options;
 	int no_save;
 	int verbose;
 	int quiet;
-	keyvalue_t *config;
+	KEYVALUE *config;
 };
 
-typedef struct netman_options options_t;
+typedef struct netman_options OPTIONS;
 
 struct netman_state {
 	int state;
 	int mode;
-	options_t options;
-	keyvalue_t *config;
+	OPTIONS options;
+	KEYVALUE *config;
 };
 
-typedef struct netman_state state_t;
+typedef struct netman_state STATE;
 
 #endif

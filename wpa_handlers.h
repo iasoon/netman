@@ -8,7 +8,7 @@
 #include "util.h"
 #include "wpa_ctrl.h"
 
-void prompt_password(state_t *state, wpa_interface_t *iface, char *params);
-void netman_exit(state_t *state, wpa_interface_t *iface, char *params);
+void prompt_password(STATE *state, WPA_INTERFACE *iface, char *params);
+void netman_exit(STATE *state, WPA_INTERFACE *iface, char *params);
 
 #endif

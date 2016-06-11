@@ -54,14 +54,14 @@ extract_token(char *buffer, int num)
 }
 
 
-keyvalue_t *
+KEYVALUE *
 read_keyvalue(FILE *file)
 {
 	char buffer[BUFFER_SIZE];
 	size_t num;
-	keyvalue_t *kv, *root = 0;
+	KEYVALUE *kv, *root = 0;
 
-	keyvalue_t *predecessors[STACK_SIZE] = {0};
+	KEYVALUE *predecessors[STACK_SIZE] = {0};
 	int depth = 0;
 
 	while (read(buffer, file)) {
@@ -72,7 +72,7 @@ read_keyvalue(FILE *file)
 			depth--;
 		} else {
 			/* attach a new node to the tree */
-			if ((kv = malloc(sizeof(keyvalue_t))) == NULL) {
+			if ((kv = malloc(sizeof(KEYVALUE))) == NULL) {
 				eprintf("Malloc failed\n");
 				exit(1);
 			}
@@ -112,8 +112,8 @@ read_keyvalue(FILE *file)
 
 
 void
-write_keyvalue(FILE *file, keyvalue_t *root){
-	keyvalue_t *pos[STACK_SIZE] = {0};
+write_keyvalue(FILE *file, KEYVALUE *root){
+	KEYVALUE *pos[STACK_SIZE] = {0};
 	int i, depth = 0;
 	pos[0] = root;
 	while (pos[0]) {
@@ -139,7 +139,7 @@ write_keyvalue(FILE *file, keyvalue_t *root){
 	}
 }
 
-keyvalue_t *
+KEYVALUE *
 netman_get_config()
 {
 	FILE *conf_file = fopen(NETMAN_CONFIG_LOCATION, "r");
@@ -147,7 +147,7 @@ netman_get_config()
 		DEBUG("couldn't open config file\n");
 		return NULL;
 	}
-	keyvalue_t *conf = read_keyvalue(conf_file);
+	KEYVALUE *conf = read_keyvalue(conf_file);
 	fclose(conf_file);
 	return conf;
 }

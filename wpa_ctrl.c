@@ -40,7 +40,7 @@ enum {
 	TYPES_NUM,
 };
 
-typedef void (*wpa_action_t)(state_t *state, wpa_interface_t *iface, char *params);
+typedef void (*wpa_ACTION)(STATE *state, WPA_INTERFACE *iface, char *params);
 
 
 static char types[TYPES_NUM][128] = {
@@ -97,7 +97,7 @@ get_param_str(char buffer[BUFFER_SIZE], char params[512], int idx)
 
 /* returns: bytes read */
 static size_t
-_wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, va_list args)
+_wpa_request(const WPA_INTERFACE *iface, char *reply, const char *fmt, va_list args)
 {
 	char buffer[BUFFER_SIZE];
 	size_t nbytes;
@@ -120,7 +120,7 @@ _wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, va_list
 }
 
 size_t
-wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, ...)
+wpa_request(const WPA_INTERFACE *iface, char *reply, const char *fmt, ...)
 {
 	va_list args;
 	size_t size;
@@ -130,14 +130,14 @@ wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, ...)
 	return size;
 }
 
-static keyvalue_t *
-wpa_request_kv(const wpa_interface_t *iface, const char *fmt, ...)
+static KEYVALUE *
+wpa_request_kv(const WPA_INTERFACE *iface, const char *fmt, ...)
 {
 	va_list args;
 	char buffer[BUFFER_SIZE];
 	size_t size;
 	FILE *handle;
-	keyvalue_t *kv = 0;
+	KEYVALUE *kv = 0;
 	va_start(args, fmt);
 	size = _wpa_request(iface, buffer, fmt, args);
 	va_end(args);
@@ -151,7 +151,7 @@ wpa_request_kv(const wpa_interface_t *iface, const char *fmt, ...)
 
 /* returns: success */
 static int
-wpa_command(const wpa_interface_t *iface, const char *fmt, ...)
+wpa_command(const WPA_INTERFACE *iface, const char *fmt, ...)
 {
 	va_list args;
 	char buffer[BUFFER_SIZE];
@@ -166,14 +166,14 @@ wpa_command(const wpa_interface_t *iface, const char *fmt, ...)
 }
 
 static void
-wpa_handle_messages(state_t *state, wpa_interface_t *iface)
+wpa_handle_messages(STATE *state, WPA_INTERFACE *iface)
 {
 	char buffer[BUFFER_SIZE];
 	char params[512];
 	int nbytes, idx = -1;
-	wpa_action_t handle;
+	wpa_ACTION handle;
 	
-	wpa_action_t handles[TYPES_NUM][NETMAN_NUM_STATES] = {{0}};
+	wpa_ACTION handles[TYPES_NUM][NETMAN_NUM_STATES] = {{0}};
 	handles[CE_CON][NETMAN_STATE_CONNECTING] = netman_exit;
 	handles[CR_PASS][NETMAN_STATE_CONNECTING] = prompt_password;
 	
@@ -197,20 +197,20 @@ wpa_handle_messages(state_t *state, wpa_interface_t *iface)
 }
 
 static void
-wpa_configure_network(wpa_interface_t *iface, wpa_network_t *network)
+wpa_configure_network(WPA_INTERFACE *iface, WPA_NETWORK *network)
 {
-	keyvalue_t *kv;
+	KEYVALUE *kv;
 	for (kv = network->options; kv; kv = kv->next) {
 		/* TODO: failure */
 		wpa_command(iface, "SET_NETWORK %d %s %s", network->id, kv->key, kv->value.str);
 	}
 }
 
-static wpa_network_t *
-wpa_add_network(wpa_interface_t *iface, keyvalue_t *options)
+static WPA_NETWORK *
+wpa_add_network(WPA_INTERFACE *iface, KEYVALUE *options)
 {
 	char buffer[BUFFER_SIZE];
-	wpa_network_t *net = malloc(sizeof(wpa_network_t));
+	WPA_NETWORK *net = malloc(sizeof(WPA_NETWORK));
 	/* TODO: handle errors */
 	wpa_request(iface, buffer, "ADD_NETWORK");
 	sscanf(buffer, "%d", &net->id);
@@ -221,18 +221,18 @@ wpa_add_network(wpa_interface_t *iface, keyvalue_t *options)
 }
 
 static void
-wpa_enable_network(wpa_interface_t *iface, wpa_network_t *network)
+wpa_enable_network(WPA_INTERFACE *iface, WPA_NETWORK *network)
 {
 	wpa_command(iface, "ENABLE_NETWORK %d", network->id);
 }
 
 static void
-wpa_fetch_networks(wpa_interface_t *iface)
+wpa_fetch_networks(WPA_INTERFACE *iface)
 {
 	char buffer[BUFFER_SIZE];
 	char *id, *ssid, *bssid, *flags, *start = buffer;
 	char *quoted_ssid, *end;
-	wpa_network_t *net;
+	WPA_NETWORK *net;
 
 	wpa_request(iface, buffer, "LIST_NETWORKS");
 	/* skip header line */
@@ -250,7 +250,7 @@ wpa_fetch_networks(wpa_interface_t *iface)
 
 		/* TODO: update networks if they already exist */
 		if (*id && *ssid) {
-			net = malloc(sizeof(wpa_network_t));
+			net = malloc(sizeof(WPA_NETWORK));
 			/* TODO: fill properties */
 			net->id = atoi(id);
 			quoted_ssid = strdup(ssid);
@@ -271,7 +271,7 @@ wpa_fetch_networks(wpa_interface_t *iface)
 }
 
 static int
-wpa_socket_connect(wpa_socket_t *sock, char *socket_addr)
+wpa_socket_connect(WPA_SOCKET *sock, char *socket_addr)
 {
 	int ret;
 
@@ -294,14 +294,14 @@ wpa_socket_connect(wpa_socket_t *sock, char *socket_addr)
 }
 
 static void
-wpa_socket_close(wpa_socket_t *sock)
+wpa_socket_close(WPA_SOCKET *sock)
 {
 	unlink(sock->local.sun_path);
 	close(sock->socket);
 }
 
 static int
-wpa_interface_connect(wpa_interface_t *iface, char *socket_addr)
+wpa_interface_connect(WPA_INTERFACE *iface, char *socket_addr)
 {
 	if (!wpa_socket_connect(&iface->control, socket_addr))
 		return 0;
@@ -310,19 +310,19 @@ wpa_interface_connect(wpa_interface_t *iface, char *socket_addr)
 }
 
 static void
-wpa_interface_disconnect(wpa_interface_t *iface)
+wpa_interface_disconnect(WPA_INTERFACE *iface)
 {
 	wpa_socket_close(&iface->control);
 	/* TODO: close messages when they have their own socket*/
 }
 
 static void
-wpa_interface_init(wpa_interface_t *iface, char *interface)
+wpa_interface_init(WPA_INTERFACE *iface, char *interface)
 {
 	char sock_addr[BUFFER_SIZE];
 
-	memset(&iface->control, 0, sizeof(wpa_socket_t));
-	memset(&iface->messages, 0, sizeof(wpa_socket_t));
+	memset(&iface->control, 0, sizeof(WPA_SOCKET));
+	memset(&iface->messages, 0, sizeof(WPA_SOCKET));
 	iface->current_network = 0;
 	iface->networks = mk_hashtable(64);
 
@@ -335,10 +335,10 @@ wpa_interface_init(wpa_interface_t *iface, char *interface)
 
 /* TODO: eww. */
 void
-wpa_connect_to_network(state_t *state, char *interface, keyvalue_t *options)
+wpa_connect_to_network(STATE *state, char *interface, KEYVALUE *options)
 {
-	wpa_interface_t iface;
-	wpa_network_t *net;
+	WPA_INTERFACE iface;
+	WPA_NETWORK *net;
 	wpa_interface_init(&iface, interface);
 	net = hash_get_ptr(iface.networks, get_element("ssid", options).str);
 	if (!net) {

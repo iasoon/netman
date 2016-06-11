@@ -11,9 +11,8 @@ get_nid(char nid[4], char *params)
 }
 
 
-/* FIXME: Currently prints to stdout */
 void 
-prompt_password(state_t *state, wpa_interface_t *iface, char *params)
+prompt_password(STATE *state, WPA_INTERFACE *iface, char *params)
 {
 	struct termios tp, save;
 	char buf[BUFFER_SIZE];
@@ -52,7 +51,7 @@ prompt_password(state_t *state, wpa_interface_t *iface, char *params)
 }
 
 void
-netman_exit(state_t *state, wpa_interface_t *iface, char *params)
+netman_exit(STATE *state, WPA_INTERFACE *iface, char *params)
 {
 	/* TODO: properly clean up or something */
 	printf("%s\n", params);

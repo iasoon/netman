@@ -13,7 +13,7 @@
 #include "util.h"
 #include "wpa_ctrl.h"
 
-static options_t default_opts = {
+static OPTIONS default_opts = {
 	.cfg_path    = NULL,
 	.network     = NULL,
 	.interface   = NULL,
@@ -24,7 +24,7 @@ static options_t default_opts = {
 };
 
 static int
-arg_parse(int argc, char *argv[], int *mode, options_t *options)
+arg_parse(int argc, char *argv[], int *mode, OPTIONS *options)
 {
 	int ret_code;
 	int opt_idx = 0;
@@ -101,9 +101,9 @@ arg_parse(int argc, char *argv[], int *mode, options_t *options)
 	return 0;
 }
 
-typedef void (*action_t)(state_t *state);
+typedef void (*ACTION)(STATE *state);
 
-static action_t actions[NETMAN_NUM_MODES] = {
+static ACTION actions[NETMAN_NUM_MODES] = {
 	[NETMAN_MODE_NOP]     = NULL, /* TODO: print usage or something */
 	[NETMAN_MODE_CONNECT] = netman_connect,
 };
@@ -111,7 +111,7 @@ static action_t actions[NETMAN_NUM_MODES] = {
 int
 main(int argc, char *argv[])
 {
-	state_t state;
+	STATE state;
 	state.state = NETMAN_STATE_IDLE;
 	state.mode = NETMAN_MODE_NOP;
 	state.config = NULL;

@@ -50,17 +50,17 @@ struct keyvalue {
 	uint8_t type;
 };
 
-typedef struct keyvalue keyvalue_t;
-typedef struct hashtable hashtable_t;
+typedef struct keyvalue KEYVALUE;
+typedef struct hashtable HASHTABLE;
 
 char *strdup(const char *src);
 char *quote_str(const char *src);
-hashtable_t *mk_hashtable(uint32_t size);
-void free_hashtable(hashtable_t *h);
-void hash_add(hashtable_t *h, const char *key, void *ptr);
-void *hash_get_ptr(hashtable_t *h, const char *key);
-keyvalue_t *mk_keyvalue(char *key, void *value, keyvalue_t *next, uint8_t type);
-union _vc get_element(const char *longkey, keyvalue_t *root);
-void free_kv(keyvalue_t *root);
+HASHTABLE *mk_hashtable(uint32_t size);
+void free_hashtable(HASHTABLE *h);
+void hash_add(HASHTABLE *h, const char *key, void *ptr);
+void *hash_get_ptr(HASHTABLE *h, const char *key);
+KEYVALUE *mk_keyvalue(char *key, void *value, KEYVALUE *next, uint8_t type);
+union _vc get_element(const char *longkey, KEYVALUE *root);
+void free_kv(KEYVALUE *root);
 
 #endif

@@ -20,7 +20,7 @@ struct if_ctrl {
 	int socket;
 };
 
-typedef struct if_ctrl if_ctrl_t;
+typedef struct if_ctrl IF_CTRL;
 
 int if_up(char *iface);
 int if_down(char *iface);

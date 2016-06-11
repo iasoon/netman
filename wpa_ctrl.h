@@ -23,15 +23,15 @@ struct wpa_interface {
 	struct wpa_socket messages;
 	struct wpa_network *current_network;
 	/* map ssids to configured networks */
-	hashtable_t *networks;
+	HASHTABLE *networks;
 };
 
-typedef struct wpa_network wpa_network_t;
-typedef struct wpa_socket wpa_socket_t;
-typedef struct wpa_interface wpa_interface_t;
+typedef struct wpa_network WPA_NETWORK;
+typedef struct wpa_socket WPA_SOCKET;
+typedef struct wpa_interface WPA_INTERFACE;
 
-size_t wpa_request(const wpa_interface_t *iface, char *reply, const char *fmt, ...);
-void wpa_connect_to_network(state_t *state, char *interface, keyvalue_t *options);
+size_t wpa_request(const WPA_INTERFACE *iface, char *reply, const char *fmt, ...);
+void wpa_connect_to_network(STATE *state, char *interface, KEYVALUE *options);
 void wpa_reconnect_to_network();
 
 #endif
