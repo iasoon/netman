@@ -5,10 +5,14 @@
 #include <sys/socket.h>
 
 #include <ifaddrs.h>
-#include <net/if.h>
+
 #ifdef __linux__
 #define __USE_MISC
+#include <linux/if.h>
+#else /* !__linux__ */
+#include <net/if.h>
 #endif /* __linux__ */
+
 #include <netinet/in.h>
 
 #include <errno.h>
