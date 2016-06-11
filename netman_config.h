@@ -7,7 +7,11 @@
 
 #define NETMAN_CONFIG_LOCATION "netman.conf"
 
-KEYVALUE *read_keyvalue(FILE *handle);
-KEYVALUE *netman_get_config();
+__BEGIN_DECLS
+
+KEYVALUE	*read_keyvalue(FILE *handle);
+KEYVALUE	*netman_get_config();
+
+__END_DECLS
 
 #endif

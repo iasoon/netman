@@ -40,7 +40,7 @@ enum {
 	TYPES_NUM,
 };
 
-typedef void (*wpa_ACTION)(STATE *state, WPA_INTERFACE *iface, char *params);
+typedef void (*WPA_ACTION)(STATE *state, WPA_INTERFACE *iface, char *params);
 
 
 static char types[TYPES_NUM][128] = {
@@ -171,9 +171,9 @@ wpa_handle_messages(STATE *state, WPA_INTERFACE *iface)
 	char buffer[BUFFER_SIZE];
 	char params[512];
 	int nbytes, idx = -1;
-	wpa_ACTION handle;
+	WPA_ACTION handle;
 	
-	wpa_ACTION handles[TYPES_NUM][NETMAN_NUM_STATES] = {{0}};
+	WPA_ACTION handles[TYPES_NUM][NETMAN_NUM_STATES] = {{0}};
 	handles[CE_CON][NETMAN_STATE_CONNECTING] = netman_exit;
 	handles[CR_PASS][NETMAN_STATE_CONNECTING] = prompt_password;
 	

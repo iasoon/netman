@@ -53,14 +53,18 @@ struct keyvalue {
 typedef struct keyvalue KEYVALUE;
 typedef struct hashtable HASHTABLE;
 
-char *strdup(const char *src);
-char *quote_str(const char *src);
-HASHTABLE *mk_hashtable(uint32_t size);
-void free_hashtable(HASHTABLE *h);
-void hash_add(HASHTABLE *h, const char *key, void *ptr);
-void *hash_get_ptr(HASHTABLE *h, const char *key);
-KEYVALUE *mk_keyvalue(char *key, void *value, KEYVALUE *next, uint8_t type);
-union _vc get_element(const char *longkey, KEYVALUE *root);
-void free_kv(KEYVALUE *root);
+__BEGIN_DECLS
+
+char		*strdup(const char *src);
+char		*quote_str(const char *src);
+HASHTABLE 	*mk_hashtable(uint32_t size);
+void 		 free_hashtable(HASHTABLE *h);
+void 		 hash_add(HASHTABLE *h, const char *key, void *ptr);
+void 		*hash_get_ptr(HASHTABLE *h, const char *key);
+KEYVALUE 	*mk_keyvalue(char *key, void *value, KEYVALUE *next, uint8_t type);
+union _vc 	 get_element(const char *longkey, KEYVALUE *root);
+void 		 free_kv(KEYVALUE *root);
+
+__END_DECLS
 
 #endif

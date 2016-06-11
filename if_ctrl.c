@@ -1,4 +1,5 @@
 #include "if_ctrl.h"
+#include "util.h"
 
 static IF_CTRL default_if_ctrl = {
 	.socket = -1,

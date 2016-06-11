@@ -6,10 +6,14 @@
 #include "util.h"
 #include "wpa_ctrl.h"
 
-void netman_connect(STATE *state);
-void netman_reconnect(OPTIONS *options);
-void netman_blacklist(OPTIONS *options);
-void netman_scan(OPTIONS *options);
-void netman_scan_networks(OPTIONS *options);
+__BEGIN_DECLS
+
+void	netman_connect(STATE *state);
+void	netman_reconnect(OPTIONS *options);
+void	netman_blacklist(OPTIONS *options);
+void	netman_scan(OPTIONS *options);
+void	netman_scan_networks(OPTIONS *options);
+
+__END_DECLS
 
 #endif
