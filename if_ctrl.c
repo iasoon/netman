@@ -1,6 +1,17 @@
 #include "if_ctrl.h"
 #include "util.h"
 
+/* The problem:
+ * All the UNIX systems keep AF_LINK as the sa_family
+ * Linux keeps AF_PACKET.
+*/
+
+#ifdef __linux__
+#define SA_FAMILY_TYPE AF_PACKET
+#else /* !__linux__ */
+#define SA_FAMILY_TYPE AF_LINK
+#endif /* __linux__ */
+
 static IF_CTRL default_if_ctrl = {
 	.socket = -1,
 };
@@ -139,22 +150,10 @@ if_reenable()
 		 * - up
 		 */
 
-		/* The problem:
-		 * All the UNIX systems keep AF_LINK as the sa_family
-		 * Linux keeps AF_PACKET.
-		*/
-#ifdef __linux__
-		if (addr->ifa_addr && 
-		    addr->ifa_addr->sa_family == AF_PACKET &&
-		    strcmp(addr->ifa_name, "lo") != 0 &&
-		    if_check_link(addr->ifa_name) != 0) {
-#else /* !__linux__ */
 		if (addr->ifa_addr &&
-		    addr->ifa_addr->sa_family == AF_LINK &&
+		    addr->ifa_addr->sa_family == SA_FAMILY_TYPE &&
 		    strcmp(addr->ifa_name, "lo") != 0 &&
 		    if_check_link(addr->ifa_name) != 0) {
-#endif /* __linux__ */
-
 			if (if_down(addr->ifa_name) == 0) {
 				eprintf("Failed to put the interface down: %s\n", 
 				    addr->ifa_name);
